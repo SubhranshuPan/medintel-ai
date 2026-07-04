@@ -5,7 +5,7 @@
 | **Project** | MedIntel AI |
 | **Document ID** | APP-001 |
 | **Version** | v1.0 |
-| **Status** | Draft |
+| **Status** | Frozen |
 | **Owner** | Subhranshu Panda |
 | **Repository** | medintel-ai |
 | **Last Updated** | July 2026 |

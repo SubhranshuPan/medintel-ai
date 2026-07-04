@@ -876,9 +876,6 @@ Frontend
 
 ## 2️⃣ AI Pipeline
 
-Replace with
-
-````markdown
 ```mermaid
 flowchart LR
 

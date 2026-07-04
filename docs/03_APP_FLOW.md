@@ -677,19 +677,20 @@ F --> G[Knowledge Base Updated]
 Users can manage their personal workspace throughout their learning or research sessions.
 
 ```mermaid
-flowchart LR
+flowchart TD
 
-Dashboard
+A[Dashboard]
 
---> Conversations
+A --> B[Conversations]
 
---> Bookmarks
+A --> C[Bookmarks]
 
---> Saved Responses
+A --> D[Saved Responses]
 
---> Profile
+A --> E[Profile]
 
---> Settings
+A --> F[Settings]
+
 ```
 
 ---
@@ -699,21 +700,21 @@ Dashboard
 ```mermaid
 flowchart TD
 
-AdminLogin
+A[Admin Login]
 
---> Dashboard
+A --> B[Dashboard]
 
---> User Management
+B --> C[User Management]
 
---> Document Management
+B --> D[Document Management]
 
---> AI Configuration
+B --> E[AI Configuration]
 
---> System Monitoring
+B --> F[System Monitoring]
 
---> Audit Logs
+B --> G[Audit Logs]
 
---> Logout
+B --> H[Logout]
 ```
 
 ---
@@ -750,23 +751,24 @@ Logout --> LoggedOut
 ```mermaid
 flowchart LR
 
-User
+A[User]
 
---> Authentication
+A --> B[Authentication]
 
---> Dashboard
+B --> C[Dashboard]
 
---> AI Chat
+C --> D[AI Assistant]
 
---> RAG Pipeline
+D --> E[RAG Pipeline]
 
---> Citation Generation
+E --> F[Citation Generation]
 
---> Conversation Storage
+F --> G[Conversation Storage]
 
---> Analytics
+G --> H[Analytics]
 
---> Logout
+H --> I[Logout]
+
 ```
 
 ---

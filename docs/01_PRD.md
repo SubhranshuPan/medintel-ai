@@ -2,7 +2,7 @@
 
 **Project:** MedIntel AI
 
-**Version:** v1.9
+**Version:** v1.0
 
 **Author:** Subhranshu Panda
 

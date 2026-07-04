@@ -744,33 +744,6 @@ Logout --> LoggedOut
 
 ---
 
-## Error Handling Workflow
-
-```mermaid
-flowchart TD
-
-Request
-
---> Validation
-
-Validation -->|Valid| Processing
-
-Validation -->|Invalid| Error
-
-Processing --> Success
-
-Processing --> Failure
-
-Failure --> Retry
-
-Retry --> Processing
-
-Retry --> Error
-
-Error --> UserNotification
-```
-
----
 
 ## Complete System Lifecycle
 

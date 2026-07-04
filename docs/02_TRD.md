@@ -73,6 +73,8 @@ E --> G
 
 E --> H
 
+```
+
 # 1. Technical Overview
 
 ## Purpose
@@ -876,9 +878,6 @@ Frontend
 
 ## 2️⃣ AI Pipeline
 
-Replace with
-
-````markdown
 ```mermaid
 flowchart LR
 

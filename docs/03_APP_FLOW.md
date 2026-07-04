@@ -5,7 +5,7 @@
 | **Project** | MedIntel AI |
 | **Document ID** | APP-001 |
 | **Version** | v1.0 |
-| **Status** | Draft |
+| **Status** | Frozen |
 | **Owner** | Subhranshu Panda |
 | **Repository** | medintel-ai |
 | **Last Updated** | July 2026 |
@@ -677,19 +677,20 @@ F --> G[Knowledge Base Updated]
 Users can manage their personal workspace throughout their learning or research sessions.
 
 ```mermaid
-flowchart LR
+flowchart TD
 
-Dashboard
+A[Dashboard]
 
---> Conversations
+A --> B[Conversations]
 
---> Bookmarks
+A --> C[Bookmarks]
 
---> Saved Responses
+A --> D[Saved Responses]
 
---> Profile
+A --> E[Profile]
 
---> Settings
+A --> F[Settings]
+
 ```
 
 ---
@@ -699,21 +700,21 @@ Dashboard
 ```mermaid
 flowchart TD
 
-AdminLogin
+A[Admin Login]
 
---> Dashboard
+A --> B[Dashboard]
 
---> User Management
+B --> C[User Management]
 
---> Document Management
+B --> D[Document Management]
 
---> AI Configuration
+B --> E[AI Configuration]
 
---> System Monitoring
+B --> F[System Monitoring]
 
---> Audit Logs
+B --> G[Audit Logs]
 
---> Logout
+B --> H[Logout]
 ```
 
 ---
@@ -744,56 +745,30 @@ Logout --> LoggedOut
 
 ---
 
-## Error Handling Workflow
-
-```mermaid
-flowchart TD
-
-Request
-
---> Validation
-
-Validation -->|Valid| Processing
-
-Validation -->|Invalid| Error
-
-Processing --> Success
-
-Processing --> Failure
-
-Failure --> Retry
-
-Retry --> Processing
-
-Retry --> Error
-
-Error --> UserNotification
-```
-
----
 
 ## Complete System Lifecycle
 
 ```mermaid
 flowchart LR
 
-User
+A[User]
 
---> Authentication
+A --> B[Authentication]
 
---> Dashboard
+B --> C[Dashboard]
 
---> AI Chat
+C --> D[AI Assistant]
 
---> RAG Pipeline
+D --> E[RAG Pipeline]
 
---> Citation Generation
+E --> F[Citation Generation]
 
---> Conversation Storage
+F --> G[Conversation Storage]
 
---> Analytics
+G --> H[Analytics]
 
---> Logout
+H --> I[Logout]
+
 ```
 
 ---

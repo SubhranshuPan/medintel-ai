@@ -1,0 +1,25 @@
+
+# ==================================================
+# MedIntel AI - CODEOWNERS
+# ==================================================
+
+# Default owner for the entire repository
+* @YOUR_GITHUB_USERNAME
+
+# Documentation
+/docs/ @YOUR_GITHUB_USERNAME
+
+# AI Workspace
+/.ai/ @YOUR_GITHUB_USERNAME
+
+# Backend
+/backend/ @YOUR_GITHUB_USERNAME
+
+# Frontend
+/frontend/ @YOUR_GITHUB_USERNAME
+
+# Infrastructure
+/infrastructure/ @YOUR_GITHUB_USERNAME
+
+# GitHub Configuration
+/.github/ @YOUR_GITHUB_USERNAME

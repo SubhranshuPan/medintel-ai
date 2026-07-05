@@ -1,831 +1,151 @@
 # Application Flow Document (APP_FLOW)
 
-| Field | Value |
-|--------|-------|
-| **Project** | MedIntel AI |
-| **Document ID** | APP-001 |
-| **Version** | v1.0 |
-| **Status** | Frozen |
-| **Owner** | Subhranshu Panda |
-| **Repository** | medintel-ai |
-| **Last Updated** | July 2026 |
+**Version:** v2.0
+**Status:** Active
+**Related:** `01_PRD.md`, `02_TRD.md`, `docs/architecture/adr/`
 
 ---
 
 # 1. Purpose
 
-The Application Flow document describes how users interact with MedIntel AI and how the system processes those interactions behind the scenes.
-
-It bridges the gap between the Product Requirements Document (PRD) and the Technical Requirements Document (TRD) by documenting end-to-end workflows, system behavior, and AI processing pipelines.
-
-This document serves as the operational blueprint for frontend, backend, AI/ML, QA, and future contributors.
+Describes user-facing flows for all five pillars. Superseded v1.0 covered only Auth + RAG Chat; this version adds Data Platform, Analytics, ML Engine, and Reporting flows.
 
 ---
 
 # 2. Scope
 
-Version **1.0** covers the complete lifecycle of a user session, including:
-
-1 Authentication & Onboarding
-
-2 AI Chat & RAG
-
-3 Supporting Workflows
-
-4 Future Expansion
+Covers: onboarding/auth, data upload & versioning, analytics dashboard interaction, ML training/prediction/explanation, AI Decision Support chat, and report generation/export.
 
 ---
 
 # 3. User Roles
 
-| Role | Primary Responsibilities |
-|------|---------------------------|
-| **Student** | Learn medical concepts using AI-assisted search and citations |
-| **Researcher** | Retrieve, compare, and explore biomedical literature |
-| **Healthcare Professional** | Access evidence-backed medical information |
-| **Administrator** | Manage users, documents, AI configuration, and system health |
+- **Standard User** — uploads data, views analytics, runs predictions, uses AI chat, generates reports.
+- **Admin** — user management, model version management, audit log access.
 
 ---
 
 # 4. High-Level User Journey
 
-The following workflow summarizes the complete application lifecycle.
-
-```mermaid
-flowchart TD
-
-A[Landing Page]
-
-A --> B{Authenticated?}
-
-B -->|No| C[Login / Register]
-
-C --> D[JWT Authentication]
-
-D --> E[Dashboard]
-
-B -->|Yes| E
-
-E --> F[AI Chat]
-
-E --> G[Upload Documents]
-
-E --> H[Search Knowledge Base]
-
-E --> I[Bookmarks]
-
-E --> J[Profile]
-
-G --> K[Document Processing]
-
-K --> L[Embedding Generation]
-
-L --> M[(Qdrant)]
-
-F --> N[RAG Pipeline]
-
-M --> N
-
-N --> O[LLM]
-
-O --> P[Citation Builder]
-
-P --> Q[Stream Response]
-
-Q --> R[Conversation Saved]
-
-R --> E
-
-E --> S[Logout]
-```
+1. Register / log in.
+2. Upload a dataset → validated → versioned.
+3. Explore it on the Analytics Dashboard.
+4. Train or select a model → run predictions → view SHAP explanation.
+5. Ask AI Decision Support natural-language questions about the data, a prediction, or medical literature.
+6. Export findings as a PDF/CSV/executive report.
 
 ---
 
-# 5. System Interaction Overview
+# 5. Flow: Authentication & Onboarding
 
-The diagram below illustrates how the major system components collaborate to process a user request.
+**Objective:** Secure entry into the platform.
 
-```mermaid
-flowchart LR
+1. User registers (email + password) → bcrypt hash stored.
+2. User logs in → JWT issued.
+3. JWT attached to all subsequent requests; role-based authorization applied per endpoint.
 
-U[User]
-
-FE[React Frontend]
-
-API[FastAPI Backend]
-
-AUTH[Authentication]
-
-CHAT[Chat Service]
-
-RAG[RAG Engine]
-
-Q[(Qdrant)]
-
-DB[(PostgreSQL)]
-
-LLM[LLM Provider]
-
-U --> FE
-
-FE --> API
-
-API --> AUTH
-
-API --> CHAT
-
-CHAT --> RAG
-
-RAG --> Q
-
-CHAT --> DB
-
-RAG --> LLM
-
-LLM --> CHAT
-
-CHAT --> API
-
-API --> FE
-
-FE --> U
-```
+**Edge cases:** invalid credentials, expired token refresh, duplicate registration email.
 
 ---
 
-# 6. Key Application Modules
+# 6. Flow: Patient Data Platform (new)
 
-| Module | Description |
-|---------|-------------|
-| Authentication | Secure user registration, login, and session management |
-| Dashboard | Central workspace for accessing all application features |
-| AI Chat | Conversational interface powered by Retrieval-Augmented Generation |
-| Document Management | Upload, process, and index medical literature |
-| Semantic Search | Retrieve relevant medical knowledge using vector similarity |
-| User Workspace | Conversation history, bookmarks, and profile management |
-| Administration | User management, document indexing, monitoring, and AI configuration |
+**Objective:** Get a clean, versioned dataset into the system.
 
----
+1. User uploads a CSV.
+2. Backend validates schema (column presence/types) and flags row-level issues.
+3. User reviews validation results; triggers cleaning if needed.
+4. A new immutable `dataset_version` is created for the cleaned result (ADR-009).
+5. Dataset becomes selectable across Analytics, ML Engine, and AI Decision Support modules.
 
-## Design Principles
+**Edge cases:** malformed CSV, schema mismatch against an existing dataset, very large file requiring background processing rather than inline validation.
 
-Every workflow in this document follows the same engineering principles:
-
-- User-first experience
-- Explainable AI with citations
-- Modular backend architecture
-- Stateless APIs
-- Secure by default
-- Scalable RAG pipeline
-- Minimal clicks for common tasks
-- Consistent user experience across modules
+**Compliance note:** every upload is logged to `audit_logs`; de-identification is never assumed (per workflow rules) even though v1 assumes public/synthetic data only.
 
 ---
 
-## Workflow Roadmap
+# 7. Flow: Clinical Analytics Dashboard (new)
 
-The remaining sections describe each workflow in detail.
+**Objective:** Let users explore an active dataset visually.
 
-1. Authentication Flow
-2. User Onboarding
-3. Dashboard Navigation
-4. AI Chat Workflow
-5. RAG Retrieval Workflow
-6. Document Ingestion
-7. Conversation Lifecycle
-8. Search & Citation Flow
-9. User Profile
-10. Admin Workflow
-11. Error Handling
-12. Session Lifecycle
-13. Navigation Map
-14. Requirement Traceability
-15. Future Enhancements
+1. User selects an active dataset (and version).
+2. Dashboard renders prevalence, risk distribution, demographic, and time-series charts (Recharts).
+3. User configures/filters KPI widgets.
+
+**Edge cases:** dataset too small for meaningful demographic breakdowns; missing columns required for a given chart (graceful fallback, not a hard error).
 
 ---
 
-# 7. Authentication & User Onboarding
+# 8. Flow: ML Engine — Train, Predict, Explain (new)
 
-## Objective
+**Objective:** Produce an explainable prediction.
 
-Enable users to securely register, authenticate, and access the MedIntel AI platform while ensuring a smooth onboarding experience.
+1. User selects a dataset version and triggers training (Celery background job, ADR-010).
+2. MLflow logs the run; user compares runs by ROC-AUC/precision/recall.
+3. User promotes a run to `Production` in the registry.
+4. User (or the system, per-patient) requests a prediction → served synchronously from the `Production` model.
+5. SHAP `TreeExplainer` computes and persists the local explanation alongside the prediction (ADR-011).
+6. User views the prediction with its SHAP explanation in the UI.
 
----
-
-## Authentication Workflow
-
-```mermaid
-flowchart TD
-
-A[Landing Page]
-
-A --> B{Existing User?}
-
-B -->|Yes| C[Login]
-
-B -->|No| D[Register]
-
-D --> E[Create Account]
-
-E --> F[Email Validation]
-
-F --> G[JWT Authentication]
-
-C --> G
-
-G --> H{Authenticated?}
-
-H -->|Success| I[Dashboard]
-
-H -->|Failure| J[Display Error]
-```
+**Edge cases:** training job failure/timeout, no `Production` model yet registered, SHAP computation exceeding latency budget for very wide feature sets (mitigated by async global summaries).
 
 ---
 
-## Authentication Sequence
+# 9. Flow: AI Decision Support (RAG Chat)
 
-```mermaid
-sequenceDiagram
+**Objective:** Grounded natural-language interaction — unchanged core mechanics from v1, extended scope.
 
-actor User
+1. User asks a question (about the dataset, a specific prediction, or general medical literature).
+2. Request routes through the existing multi-provider LLM abstraction (never a hardcoded provider).
+3. For literature questions: Qdrant retrieval → citation-backed synthesis (unchanged RAG pipeline).
+4. For "explain this prediction": stored SHAP values are pulled and passed as grounding context — the LLM narrates existing values, it does not generate an explanation independently.
+5. For patient summaries: relevant dataset rows + prediction history are summarized.
+6. Response streams to the UI with citations/sources where applicable.
 
-participant React
-
-participant FastAPI
-
-participant PostgreSQL
-
-User->>React: Enter email & password
-
-React->>FastAPI: POST /auth/login
-
-FastAPI->>PostgreSQL: Validate credentials
-
-PostgreSQL-->>FastAPI: User record
-
-FastAPI-->>React: JWT + Refresh Token
-
-React-->>User: Redirect to Dashboard
-```
+**Edge cases:** low retrieval-confidence answers (surface uncertainty rather than fabricating), prediction-explanation requested for a patient with no stored prediction yet.
 
 ---
 
-## User Onboarding Workflow
+# 10. Flow: Reporting (new)
 
-New users are guided through a lightweight onboarding process after successful registration.
+**Objective:** Turn dashboard/prediction/analytics output into a shareable artifact.
+
+1. User requests a PDF report, CSV export, executive dashboard, or clinical summary.
+2. Small exports render synchronously; large ones (full-cohort PDF, full dataset export) run as a Celery job (ADR-012) with a polling status endpoint.
+3. User downloads the finished file.
+
+**Edge cases:** report requested while underlying dataset/model is mid-retraining (should reference a specific version, not "whatever is live now"), very large cohort exports requiring pagination/streaming.
+
+---
+
+# 11. System Interaction Overview
 
 ```mermaid
 flowchart LR
-
-A[Create Account]
-
-B[Verify Email]
-
-C[Complete Profile]
-
-D[Welcome Screen]
-
-E[Interactive Tour]
-
-F[Dashboard]
-
-A --> B
-
-B --> C
-
-C --> D
-
-D --> E
-
-E --> F
+U[User] --> FE[React Frontend]
+FE --> API[FastAPI Backend]
+API --> Auth
+API --> Data[Data Platform]
+API --> Analytics
+API --> ML[ML Engine]
+API --> AI[AI Decision Support]
+API --> Reports
+Data --> PG[(PostgreSQL)]
+Data --> OBJ[(Object Storage)]
+ML --> PG
+ML --> MLF[MLflow]
+ML --> Q[Celery/Redis]
+AI --> QD[(Qdrant)]
+AI --> LLM[LLM Providers]
+Reports --> Q
 ```
 
 ---
 
-## Authentication States
+## Document Information
 
-```mermaid
-stateDiagram-v2
+**Version History:**
+- v1.0 — Auth + RAG Chat flows only (superseded)
+- v2.0 — Adds Data Platform, Analytics, ML Engine, and Reporting flows (current)
 
-[*] --> LoggedOut
-
-LoggedOut --> Authenticating
-
-Authenticating --> LoggedIn : Success
-
-Authenticating --> LoginFailed : Invalid Credentials
-
-LoginFailed --> LoggedOut
-
-LoggedIn --> SessionExpired
-
-SessionExpired --> LoggedOut
-
-LoggedIn --> Logout
-
-Logout --> LoggedOut
-```
-
----
-
-## Key Components
-
-| Component | Responsibility |
-|------------|----------------|
-| React | Login & Registration UI |
-| FastAPI | Authentication API |
-| JWT | Stateless authentication |
-| PostgreSQL | User credentials & roles |
-| RBAC | Role-based authorization |
-
----
-
-## Edge Cases
-
-| Scenario | System Behaviour |
-|-----------|------------------|
-| Invalid credentials | Display validation message without revealing account existence |
-| Expired token | Redirect to login after attempting refresh |
-| Duplicate email | Prevent account creation with clear feedback |
-| Weak password | Enforce password policy before registration |
-| Network interruption | Preserve form data and allow retry |
-
----
-
-## Related Requirements
-
-| Document | Requirements |
-|-----------|--------------|
-| PRD | FR-001 – FR-005 |
-| TRD | Authentication Architecture, Security Architecture |
-
----
-
-## Developer Notes
-
-- JWT-based authentication
-- BCrypt password hashing
-- Refresh token support
-- Stateless backend sessions
-- Future-ready for OAuth2 providers (Google, GitHub, Microsoft)
-
----
-
-# 8. AI Chat & Retrieval-Augmented Generation (RAG) Workflow
-
-## Objective
-
-Enable users to ask natural language medical questions and receive accurate, citation-backed responses using a Retrieval-Augmented Generation (RAG) pipeline.
-
-This workflow combines semantic search, Large Language Models (LLMs), and trusted medical literature to generate explainable AI responses.
-
----
-
-
-✔ Retrieval-Augmented Generation
-
-✔ Semantic Search
-
-✔ Vector Database
-
-✔ Prompt Engineering
-
-✔ REST APIs
-
-✔ Production Architecture
-
-✔ Docker Ready
-
-✔ Modular Design
-
-## End-to-End AI Workflow
-
-```mermaid
-flowchart TD
-
-A[User Question]
-
-A --> B[Input Validation]
-
-B --> C[Query Preprocessing]
-
-C --> D[Embedding Generation]
-
-D --> E[Vector Similarity Search]
-
-E --> F[Retrieve Top-k Documents]
-
-F --> G[Prompt Construction]
-
-G --> H[LLM Inference]
-
-H --> I[Citation Generation]
-
-I --> J[Response Validation]
-
-J --> K[Stream Response]
-
-K --> L[Save Conversation]
-
-L --> M[Dashboard Ready]
-```
-
----
-
-## AI Request Sequence
-
-```mermaid
-sequenceDiagram
-
-actor User
-
-participant React
-
-participant FastAPI
-
-participant RAG
-
-participant Qdrant
-
-participant LLM
-
-participant PostgreSQL
-
-User->>React: Ask medical question
-
-React->>FastAPI: POST /chat
-
-FastAPI->>RAG: Process query
-
-RAG->>Qdrant: Semantic search
-
-Qdrant-->>RAG: Top-k document chunks
-
-RAG->>LLM: Prompt + Retrieved Context
-
-LLM-->>RAG: AI Response
-
-RAG->>FastAPI: Response + Citations
-
-FastAPI->>PostgreSQL: Save conversation
-
-FastAPI-->>React: Stream response
-
-React-->>User: Display answer
-```
-
----
-
-## RAG Pipeline Overview
-
-```mermaid
-flowchart LR
-
-A[Medical Knowledge Base]
-
-A --> B[Document Chunking]
-
-B --> C[Embedding Generation]
-
-C --> D[(Qdrant)]
-
-E[User Query]
-
-E --> F[Embedding]
-
-F --> D
-
-D --> G[Relevant Chunks]
-
-G --> H[Prompt Assembly]
-
-H --> I[LLM]
-
-I --> J[Citation-backed Response]
-```
-
----
-
-## AI Response Lifecycle
-
-```mermaid
-stateDiagram-v2
-
-[*] --> Waiting
-
-Waiting --> Processing
-
-Processing --> RetrievingContext
-
-RetrievingContext --> GeneratingResponse
-
-GeneratingResponse --> Streaming
-
-Streaming --> Completed
-
-GeneratingResponse --> Failed
-
-RetrievingContext --> Failed
-
-Failed --> Waiting
-
-Completed --> Waiting
-```
-
----
-
-## AI Processing Pipeline
-
-| Step | Purpose |
-|------|---------|
-| Input Validation | Validate user query and sanitize input |
-| Query Preprocessing | Normalize and prepare text |
-| Embedding Generation | Convert query into vector representation |
-| Vector Search | Retrieve semantically relevant medical documents |
-| Prompt Construction | Combine retrieved context with user query |
-| LLM Inference | Generate grounded AI response |
-| Citation Generation | Attach document references |
-| Response Validation | Verify output structure |
-| Conversation Storage | Persist chat history |
-
----
-
-## Engineering Components
-
-| Component | Technology |
-|-----------|------------|
-| Frontend | React + TypeScript |
-| Backend API | FastAPI |
-| AI Orchestration | LangChain + LangGraph |
-| Vector Database | Qdrant |
-| Relational Database | PostgreSQL |
-| LLM Providers | OpenAI / Anthropic / Gemini |
-| Streaming | Server-Sent Events (SSE) |
-
----
-
-## Edge Cases
-
-| Scenario | Expected Behaviour |
-|-----------|-------------------|
-| No relevant documents found | Return response with low-confidence notice |
-| Vector database unavailable | Notify user and log retrieval failure |
-| LLM timeout | Retry once before returning an error |
-| Invalid prompt | Reject request with validation message |
-| Empty response | Trigger fallback generation workflow |
-| API rate limit exceeded | Queue or gracefully reject the request |
-
----
-
-## Data Science Highlights
-
-This workflow demonstrates several core data science and AI engineering concepts:
-
-- Semantic embeddings
-- Vector similarity search
-- Retrieval-Augmented Generation (RAG)
-- Prompt engineering
-- Context ranking
-- Explainable AI through citations
-- AI response validation
-- Conversation analytics
-
----
-
-## Related Requirements
-
-| Document | Sections |
-|-----------|----------|
-| PRD | FR-015 – FR-025 |
-| TRD | AI Architecture, RAG Pipeline, API Lifecycle |
-
----
-
-## Developer Notes
-
-- Maintain stateless API requests.
-- Keep LLM providers interchangeable through an abstraction layer.
-- Log retrieval latency and token usage for future evaluation.
-- Design the pipeline to support future reranking models and evaluation frameworks (e.g., Ragas).
-
----
-
-# 9. Supporting Workflows & System Operations
-
-The following workflows support the primary AI experience by enabling document management, user personalization, administration, and secure session handling.
-
----
-
-## Application Navigation
-
-```mermaid
-flowchart LR
-
-Dashboard --> AIChat
-
-Dashboard --> Search
-
-Dashboard --> Documents
-
-Dashboard --> Bookmarks
-
-Dashboard --> Profile
-
-Dashboard --> Admin
-
-AIChat --> Dashboard
-
-Search --> Dashboard
-
-Documents --> Dashboard
-
-Bookmarks --> Dashboard
-
-Profile --> Dashboard
-
-Admin --> Dashboard
-```
-
----
-
-## Knowledge Base Management
-
-Administrators continuously maintain the medical knowledge base used by the RAG pipeline.
-
-```mermaid
-flowchart TD
-
-A[Upload Medical Documents]
-
-A --> B[Validate File]
-
-B --> C[Extract Text]
-
-C --> D[Chunk Documents]
-
-D --> E[Generate Embeddings]
-
-E --> F[(Qdrant)]
-
-F --> G[Knowledge Base Updated]
-```
-
----
-
-## User Workspace
-
-Users can manage their personal workspace throughout their learning or research sessions.
-
-```mermaid
-flowchart TD
-
-A[Dashboard]
-
-A --> B[Conversations]
-
-A --> C[Bookmarks]
-
-A --> D[Saved Responses]
-
-A --> E[Profile]
-
-A --> F[Settings]
-
-```
-
----
-
-## Administration Workflow
-
-```mermaid
-flowchart TD
-
-A[Admin Login]
-
-A --> B[Dashboard]
-
-B --> C[User Management]
-
-B --> D[Document Management]
-
-B --> E[AI Configuration]
-
-B --> F[System Monitoring]
-
-B --> G[Audit Logs]
-
-B --> H[Logout]
-```
-
----
-
-## Session Lifecycle
-
-```mermaid
-stateDiagram-v2
-
-[*] --> LoggedOut
-
-LoggedOut --> LoggedIn
-
-LoggedIn --> ActiveSession
-
-ActiveSession --> Idle
-
-Idle --> ActiveSession
-
-Idle --> SessionExpired
-
-SessionExpired --> LoggedOut
-
-LoggedIn --> Logout
-
-Logout --> LoggedOut
-```
-
----
-
-
-## Complete System Lifecycle
-
-```mermaid
-flowchart LR
-
-A[User]
-
-A --> B[Authentication]
-
-B --> C[Dashboard]
-
-C --> D[AI Assistant]
-
-D --> E[RAG Pipeline]
-
-E --> F[Citation Generation]
-
-F --> G[Conversation Storage]
-
-G --> H[Analytics]
-
-H --> I[Logout]
-
-```
-
----
-
-## Workflow Summary
-
-| Workflow | Purpose |
-|----------|---------|
-| Authentication | Secure access to the platform |
-| Dashboard | Central navigation hub |
-| AI Chat | Conversational medical intelligence |
-| RAG Pipeline | Retrieval of trusted medical knowledge |
-| Document Processing | Build and maintain the knowledge base |
-| User Workspace | Manage conversations and bookmarks |
-| Administration | Configure and monitor the platform |
-| Session Management | Secure user sessions |
-| Error Handling | Graceful recovery from failures |
-
----
-
-Portfolio Highlights
-
-• Production-ready architecture
-
-• Modular backend
-
-• Explainable AI
-
-• Modern RAG pipeline
-
-• Scalable REST APIs
-
-• Docker deployment
-
-• Enterprise documentation
-
-• Clean engineering practices
-
----
-Status : Frozen
-
-Related Documents
-
-00_PROJECT_SCOPE.md
-
-01_PRD.md
-
-02_TRD.md
-
-04_UI_UX_BRIEF.md
-
-05_BACKEND_SCHEMA.md
-
-The workflows described in this document serve as the operational blueprint for implementing MedIntel AI Version 1.0.
-
-Future workflow enhancements will be introduced through version-controlled documentation updates alongside the Product Requirements Document (PRD) and Technical Requirements Document (TRD).
-
----
-
-# End of Document
+## End of Document

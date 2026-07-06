@@ -10,12 +10,15 @@ Each module has a single responsibility while remaining independently maintainab
 
 ## Core Modules
 
-- Authentication
-- Chat
-- RAG
-- Documents
-- Analytics
-- Administration
+Aligned with the five product pillars plus cross-cutting concerns:
+
+- Patient Data Platform (upload, validation, cleaning, dataset versioning)
+- Clinical Analytics (dashboards, KPIs, trends)
+- ML Engine (training, prediction, SHAP explainability, model comparison)
+- AI Decision Support (chat, RAG, documents, prediction explanation)
+- Reporting (PDF, CSV/XLSX export, executive dashboards)
+- Authentication & Authorization
+- Administration (users, model versions, logs, audit trail)
 
 ---
 
@@ -66,15 +69,20 @@ Response
 
 ## Architecture Decisions
 
-- FastAPI
-- React
-- PostgreSQL
-- Qdrant
-- LangChain
-- Docker
-- GitHub Actions
+- ADR-001 FastAPI
+- ADR-002 React
+- ADR-003 PostgreSQL
+- ADR-004 Qdrant
+- ADR-005 LangChain
+- ADR-006 Docker
+- ADR-007 GitHub Actions
+- ADR-008 Modular Monolith
+- ADR-009 Dataset Versioning
+- ADR-010 ML Model Serving
+- ADR-011 SHAP Explainability
+- ADR-012 Reporting & Export
 
-See ADRs for details.
+See docs/architecture/adr/ for details.
 
 ---
 

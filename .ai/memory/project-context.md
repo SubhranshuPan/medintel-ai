@@ -8,13 +8,16 @@
 
 ## What This Project Is
 
-MedIntel AI is a production-grade AI Clinical Intelligence Platform demonstrating
-Retrieval-Augmented Generation (RAG), explainable AI, and full-stack engineering
+MedIntel AI is a production-grade AI Clinical Intelligence Platform built around
+five pillars — Patient Data Platform, Clinical Analytics Dashboard, Machine Learning
+Engine (with SHAP explainability), AI Decision Support (RAG/chat), and Reporting —
+demonstrating data engineering, explainable ML, RAG, and full-stack engineering
 in the healthcare domain. It is documentation-first: `/docs` is authoritative,
 `.ai/llm-wiki` is the AI-optimized summary layer, source code is last.
 
-Target users: medical students, clinical researchers, healthcare professionals,
-AI engineers, and recruiters evaluating engineering capability.
+Target users: healthcare data scientists, clinical researchers, hospital
+administrators, system administrators, and recruiters evaluating engineering
+capability.
 
 Out of scope for v1: medical diagnosis, prescription recommendations, emergency
 medical advice. Educational/research use only.
@@ -23,8 +26,10 @@ medical advice. Educational/research use only.
 
 ## Architecture
 
-Modular Monolith. Core modules: Authentication, Chat, RAG, Documents, Analytics,
-Administration.
+Modular Monolith. Core modules follow the five pillars: Patient Data Platform,
+Clinical Analytics, ML Engine, AI Decision Support (chat/RAG/documents), Reporting —
+plus Authentication and Administration. Key ADRs: 001–008 (core stack),
+009 (dataset versioning), 010 (ML model serving), 011 (SHAP), 012 (reporting/export).
 
 Flow: React → FastAPI → Auth → Business Services → RAG Engine → (PostgreSQL + Qdrant)
 → LLM Provider → Response.
@@ -89,4 +94,4 @@ Conventional Commits required (`feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `
 
 ---
 
-*Last reviewed: 2026-07-05. Update this file only when stack, architecture, or repo structure fundamentally change — not for routine feature work.*
+*Last reviewed: 2026-07-06. Update this file only when stack, architecture, or repo structure fundamentally change — not for routine feature work.*

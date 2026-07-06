@@ -1,0 +1,10 @@
+# Normalize line endings: LF in repo and working tree
+* text=auto eol=lf
+
+# Binary files
+*.png binary
+*.jpg binary
+*.pdf binary
+*.xlsx binary
+*.pptx binary
+*.docx binary

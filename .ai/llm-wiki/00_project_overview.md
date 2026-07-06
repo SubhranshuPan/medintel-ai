@@ -2,7 +2,7 @@
 
 ## Purpose
 
-MedIntel AI is a production-grade AI platform that demonstrates modern AI engineering, Retrieval-Augmented Generation (RAG), and full-stack software engineering using the healthcare domain.
+MedIntel AI is a production-grade clinical intelligence platform built around five functional pillars. It demonstrates data engineering, machine learning with explainability (SHAP), Retrieval-Augmented Generation (RAG), and full-stack software engineering using the healthcare domain.
 
 The project is designed to showcase professional engineering practices rather than serve as a simple portfolio application.
 
@@ -11,6 +11,7 @@ The project is designed to showcase professional engineering practices rather th
 ## Objectives
 
 - Build a production-quality AI application.
+- Demonstrate data engineering, MLOps, and explainable ML.
 - Demonstrate RAG and LLM integration.
 - Follow documentation-first development.
 - Apply clean architecture and engineering best practices.
@@ -20,23 +21,23 @@ The project is designed to showcase professional engineering practices rather th
 
 ## Target Users
 
-- Medical Students
-- Researchers
-- Healthcare Professionals
-- AI Engineers
+- Healthcare Data Scientists
+- Clinical Researchers
+- Hospital Administrators
+- System Administrators
 - Recruiters evaluating engineering capability
 
 ---
 
-## Core Features
+## Five Pillars
 
-- Authentication
-- AI Chat
-- Semantic Search
-- Citation-backed Responses
-- Document Management
-- Conversation History
-- Admin Dashboard
+1. **Patient Data Platform** — upload, validate, clean, manage, and version patient datasets (ADR-009).
+2. **Clinical Analytics Dashboard** — disease prevalence, risk distributions, demographic analysis, time-series trends, KPIs.
+3. **Machine Learning Engine** — disease risk & readmission prediction, SHAP explainability, model comparison, prediction history (ADR-010, ADR-011).
+4. **AI Decision Support** — natural-language Q&A over uploaded data, prediction explanations, patient summaries, RAG-backed literature retrieval with citations.
+5. **Reporting** — PDF reports, CSV/XLSX exports, executive dashboards, clinical summaries (ADR-012).
+
+Cross-cutting: authentication (JWT), role-based authorization, user management, model version management, audit trail.
 
 ---
 
@@ -57,6 +58,10 @@ AI:
 - LangChain
 - LangGraph
 - Multiple LLM Providers
+
+ML:
+- scikit-learn
+- SHAP
 
 ---
 

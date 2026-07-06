@@ -2,9 +2,9 @@
 
 ## Purpose
 
-MedIntel AI is a production-grade Retrieval-Augmented Generation (RAG) platform built for medical knowledge retrieval and AI-assisted research.
+MedIntel AI is a production-grade clinical intelligence platform spanning five pillars: patient data management, clinical analytics, predictive ML with explainability, RAG-backed AI decision support, and reporting.
 
-The healthcare domain is used to demonstrate modern AI engineering, NLP, semantic search, and full-stack software engineering practices.
+The healthcare domain is used to demonstrate modern AI engineering, data engineering, explainable ML, semantic search, and full-stack software engineering practices.
 
 ---
 
@@ -51,6 +51,14 @@ User Query
 → Embedding
 → Vector Search
 → Relevant Documents
+
+---
+
+## Predictive ML & Explainability
+
+The ML Engine predicts disease risk and hospital readmission from uploaded patient datasets.
+
+Every prediction is explainable via SHAP (ADR-011): feature attributions show which patient factors drove a given risk score, and the AI Decision Support pillar translates SHAP output into natural-language explanations.
 
 ---
 

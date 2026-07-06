@@ -27,12 +27,12 @@ Every AI coding agent should follow this order before starting work:
 | `01_architecture.md` | Learn the system architecture, major modules, and design principles. |
 | `02_tech_stack.md` | Understand the selected technologies and why they were chosen. |
 | `03_repository_structure.md` | Navigate the repository and locate project components. |
+| `04_domain_knowledge.md` | Medical AI, RAG concepts, ML explainability, and domain-specific knowledge. |
 
 Future pages:
 
 | File | Purpose |
 |------|---------|
-| `04_domain_knowledge.md` | Medical AI, RAG concepts, and domain-specific knowledge. |
 | `05_ai_pipeline.md` | End-to-end Retrieval-Augmented Generation workflow. |
 | `06_backend.md` | Backend architecture and service responsibilities. |
 | `07_frontend.md` | Frontend architecture and application structure. |

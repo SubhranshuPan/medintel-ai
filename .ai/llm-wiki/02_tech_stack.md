@@ -31,6 +31,13 @@
 
 ---
 
+## Machine Learning
+
+- scikit-learn
+- SHAP
+
+---
+
 ## Databases
 
 - PostgreSQL

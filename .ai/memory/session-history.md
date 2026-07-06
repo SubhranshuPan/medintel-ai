@@ -47,3 +47,51 @@
 - Start logging real session entries above this line going forward
 
 **Refs:** —
+
+---
+
+## 2026-07-05 — Five-pillar scope rewrite (Sprint 0 close-out)
+
+**Agent:** human + Claude
+**Branch:** `docs/sprint0-scope-expansion`, `docs/scope-v2-five-pillars` (merged via PR #14, #16, #17)
+**Did:**
+- Rewrote PRD/TRD/APP_FLOW and PROJECT_SCOPE around the five-pillar platform
+  (Patient Data Platform, Clinical Analytics, ML Engine, AI Decision Support, Reporting)
+- Deleted `01A_Requirements_Matrix.md` (superseded by v2 scope docs)
+- Added ADR-009 (dataset versioning), ADR-010 (ML model serving),
+  ADR-011 (SHAP explainability), ADR-012 (reporting/export); all Accepted
+- Added `.ai/playbooks/daily-workflow.md`; gitignored `.claude/`
+
+**Decisions made:**
+- AI Decision Support (original RAG/chat scope) is now one pillar among five,
+  not the whole product
+
+**Next up:**
+- Sync `.ai/llm-wiki/` pages to the five-pillar scope
+- Rebase `sprint-1/backend-foundation` onto fresh `develop` before Sprint 1
+
+**Refs:** PR #14–#17, ADR-009–ADR-012
+
+---
+
+## 2026-07-06 — Repo housekeeping & wiki sync
+
+**Agent:** Claude (Cowork)
+**Branch:** `docs/wiki-sync-and-line-endings` (off `develop`)
+**Did:**
+- Pulled `develop` and `main` to match origin; deleted merged local branches
+  (`docs/sprint0-scope-expansion`, `docs/init-memory-vault`, `docs/github-setup`)
+- Added `.gitattributes` (`* text=auto eol=lf`) to stop recurring CRLF noise
+- Synced `llm-wiki/` (overview, architecture, tech stack, domain knowledge, index)
+  to the five-pillar scope and ADR-009–012
+- Updated this vault (session history, project context)
+
+**Decisions made:**
+- LF enforced in repo and working tree via `.gitattributes`
+
+**Next up:**
+- Push branch and open PR to `develop`
+- Write real `README.md`, add `LICENSE`, fix CODEOWNERS placeholder
+- Rebase `sprint-1/backend-foundation` onto fresh `develop`
+
+**Refs:** —

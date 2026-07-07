@@ -95,3 +95,30 @@
 - Rebase `sprint-1/backend-foundation` onto fresh `develop`
 
 **Refs:** —
+
+---
+
+## 2026-07-07 — Repo housekeeping (README, LICENSE, CODEOWNERS)
+
+**Agent:** Claude (Cowork)
+**Branch:** `chore/repo-housekeeping` (off `develop`)
+**Did:**
+- Pulled `develop` to origin (PR #18 merge); deleted merged local branches
+  (`docs/wiki-sync-and-line-endings`, `docs/scope-v2-five-pillars`)
+- Wrote real `README.md` (five pillars, tech stack, repo structure, status)
+- Added MIT `LICENSE` (2026 Subhranshu Pan)
+- `CODEOWNERS`: replaced `@YOUR_GITHUB_USERNAME` placeholder with `@SubhranshuPan`;
+  removed redundant `.github/.gitkeep`
+- `llm-wiki/03_repository_structure.md`: added missing `data/` and `experiments/`
+- `project-memory.md`: recorded CRLF/line-endings gotcha under Known Gotchas
+
+**Decisions made:**
+- MIT license adopted for the repo
+- Deferred: rebase of `sprint-1/backend-foundation` (kept as-is per Som)
+
+**Next up:**
+- Rebase `sprint-1/backend-foundation` onto fresh `develop` before Sprint 1
+- Delete stale remote branch `chore/repo-housekeeping` after merge cleanup
+- Start Sprint 1 (backend foundation)
+
+**Refs:** PR #19 (merged to `develop` 2026-07-08)

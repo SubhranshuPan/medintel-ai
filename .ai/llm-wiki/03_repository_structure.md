@@ -17,6 +17,12 @@ frontend/
 ml/
 : AI and ML components
 
+data/
+: Datasets and data artifacts
+
+experiments/
+: ML experiments and notebooks
+
 configs/
 : Configuration files
 

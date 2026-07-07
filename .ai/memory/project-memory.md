@@ -23,8 +23,10 @@
 
 ## Known Gotchas
 
-*(none recorded yet — add here as they're discovered, e.g. migration quirks,
-Qdrant collection config traps, provider-specific rate limits, etc.)*
+- **Line endings (2026-07-06):** Windows checkouts produced recurring CRLF noise in
+  diffs. Fixed via `.gitattributes` (`* text=auto eol=lf`); on sandboxed/mounted
+  clones also set `core.filemode false`. Don't trust mode-only or line-ending-only
+  diffs — normalize before reviewing.
 
 ---
 

@@ -4,22 +4,22 @@
 # ==================================================
 
 # Default owner for the entire repository
-* @YOUR_GITHUB_USERNAME
+* @SubhranshuPan
 
 # Documentation
-/docs/ @YOUR_GITHUB_USERNAME
+/docs/ @SubhranshuPan
 
 # AI Workspace
-/.ai/ @YOUR_GITHUB_USERNAME
+/.ai/ @SubhranshuPan
 
 # Backend
-/backend/ @YOUR_GITHUB_USERNAME
+/backend/ @SubhranshuPan
 
 # Frontend
-/frontend/ @YOUR_GITHUB_USERNAME
+/frontend/ @SubhranshuPan
 
 # Infrastructure
-/infrastructure/ @YOUR_GITHUB_USERNAME
+/infrastructure/ @SubhranshuPan
 
 # GitHub Configuration
-/.github/ @YOUR_GITHUB_USERNAME
+/.github/ @SubhranshuPan

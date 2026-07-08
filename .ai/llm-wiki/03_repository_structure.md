@@ -36,7 +36,20 @@ reports/
 : Generated reports
 
 .github/
-: GitHub workflows
+: Issue/PR templates, CODEOWNERS, CONTRIBUTING (CI workflows deferred until Sprint 1 code lands)
+
+---
+
+## Root Files
+
+CLAUDE.md
+: Claude Code instructions (model routing: Opus for planning, Sonnet for execution; code style)
+
+README.md
+: Project overview (five pillars, tech stack, repo structure, status)
+
+LICENSE
+: MIT (2026 Subhranshu Pan)
 
 ---
 

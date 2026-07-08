@@ -27,13 +27,19 @@
   diffs. Fixed via `.gitattributes` (`* text=auto eol=lf`); on sandboxed/mounted
   clones also set `core.filemode false`. Don't trust mode-only or line-ending-only
   diffs — normalize before reviewing.
+- **`gh` CLI not preinstalled (2026-07-08):** wasn't on PATH on the Windows dev
+  machine. Installed via `winget install --id GitHub.cli -e`, then
+  `gh auth login --web`. If a fresh session finds `gh` missing again, that's
+  expected on a new machine/container — same two commands fix it.
 
 ---
 
 ## Open Questions / Decisions Pending
 
-*(track anything flagged during a session that needs a human decision before
-work can continue — move to "Conventions Adopted" once resolved)*
+- **CI workflow timing:** `.github/workflows/` is intentionally still empty as
+  of 2026-07-08 — `backend/` and `frontend/` are `.gitkeep`-only scaffolds with
+  no code/tests yet. Add CI (lint + test, Python backend / Node frontend) once
+  Sprint 1 produces real code, not before.
 
 ---
 

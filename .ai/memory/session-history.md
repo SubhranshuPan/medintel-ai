@@ -26,6 +26,47 @@
 
 ---
 
+## 2026-07-08 — GitHub hygiene pass (pre-Sprint 1)
+
+**Agent:** Claude (Sonnet, VS Code extension)
+**Branch:** `develop`
+**Did:**
+- Installed GitHub CLI (`gh` 2.96.0, was missing) via winget; authenticated via
+  browser device flow (`gh auth login --web`) as `SubhranshuPan`
+- Audited GitHub state: labels (30+, already good coverage), milestones
+  (Sprint 0–5 + v1.0), issues (10 total — 4 closed docs issues, 6 open under
+  Sprint 1: #5 Backend Foundation, #6 DB Schema, #7 Auth Module, #8 Docker Env,
+  #9 FastAPI Setup, #10 Frontend Init)
+- Published GitHub Release for existing `v0.1.0` tag (was tagged but never
+  released): https://github.com/SubhranshuPan/medintel-ai/releases/tag/v0.1.0
+- Closed Milestone #1 "Sprint 0 - Documentation" (8/8 issues closed, was
+  still showing open)
+- Deleted stale local branch `sprint-1/backend-foundation` — it predated the
+  housekeeping commits on `develop` (README/LICENSE/CODEOWNERS rewrite, PR #19)
+  and would have deleted those files if merged as-is; confirmed with human
+  before deleting, never pushed to origin so no remote cleanup needed
+
+**Decisions made:**
+- `sprint-1/backend-foundation` is gone — start a fresh branch off current
+  `develop` when Sprint 1 work actually begins, don't try to resurrect it
+- No CI workflow added yet (`.github/workflows/` still empty) — deferred
+  intentionally since `backend/` and `frontend/` are still empty scaffolds
+  (`.gitkeep` only); add CI once there's real code/tests to run
+
+**Next up:**
+- Sprint 1 (Backend Foundation: FastAPI setup, DB schema, auth module, Docker)
+  is real multi-file architecture work. Per this repo's `CLAUDE.md` model-routing
+  table, that requires `/model` → Opus → `/plan` first, not direct Sonnet
+  execution. Do the planning pass before writing backend code.
+- Once Sprint 1 code lands, add `.github/workflows/` CI (lint + test, Python
+  backend / Node frontend)
+- Tag + release `v0.2.0` (or similar) when Sprint 1 closes, same pattern as
+  this session's `v0.1.0` release
+
+**Refs:** Milestone #1, Issues #5–#10, Release v0.1.0
+
+---
+
 ## 2026-07-05 — AI workspace memory vault initialized
 
 **Agent:** Claude

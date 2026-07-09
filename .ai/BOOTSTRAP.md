@@ -34,11 +34,12 @@ Never assume behavior that contradicts the documentation.
 
 Before making any code changes, read the following files in order:
 
-1. `.ai/README.md`
-2. `.ai/llm-wiki/index.md`
-3. Relevant LLM Wiki pages
-4. Relevant `/docs/` documents
-5. Current task or GitHub Issue
+1. `/.agents/AGENTS.md` — **Developer context, career goals, and project strategy**
+2. `.ai/README.md`
+3. `.ai/llm-wiki/index.md`
+4. Relevant LLM Wiki pages
+5. Relevant `/docs/` documents
+6. Current task or GitHub Issue
 
 Do not begin implementation until sufficient project context has been gathered.
 

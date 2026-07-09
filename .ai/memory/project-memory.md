@@ -43,6 +43,15 @@
 
 ---
 
+## Important Files for New Agents
+
+- **`/.agents/AGENTS.md`** (added 2026-07-09): Universal developer context file
+  containing career goals, financial constraints, UK job market strategy, and
+  portfolio objectives. **All AI agents must read this file** before starting
+  work. It eliminates the need for the developer to re-explain their situation.
+
+---
+
 ## Cross-Agent Notes
 
 This file is shared across AI agents (Claude, ChatGPT, Gemini, OpenCode, etc. —

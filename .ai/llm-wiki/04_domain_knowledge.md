@@ -107,8 +107,61 @@ The platform is intended for educational and research purposes.
 
 ---
 
+## UK Healthcare Context (NHS)
+
+The NHS is the world's largest single-payer healthcare system. Key facts agents
+should know when writing code, documentation, or making design decisions:
+
+- **1.7 million+ employees**, £168 billion annual budget
+- Active digital transformation via **NHSX** and **NHS Digital**
+- Strong push for **explainable AI** — the NHS will not deploy black-box models
+- **GDPR** governs all patient data processing in the UK
+- **NICE guidelines** (National Institute for Health and Care Excellence) define
+  clinical best practices — the AI assistant should reference these
+- **ICD codes** (International Classification of Diseases) are the standard for
+  disease coding in NHS datasets
+
+### Revenue / Cost-Saving Metrics
+
+These numbers provide real-world context for the platform's impact:
+
+| Metric | Value | Source |
+|---|---|---|
+| Cost per avoided readmission | ~£1,700 | NHS England |
+| National 30-day readmission rate (heart failure) | ~15% | NHS Digital |
+| Potential savings (18% → 15% across 5,000 patients) | £255,000/year per trust | Calculated |
+| Number of NHS trusts in England | ~220 | NHS England |
+| Potential scaled savings across trusts | Millions per year | Projected |
+
+### Relevant NHS Programmes
+
+- **GIRFT (Getting It Right First Time)** — reducing unwarranted clinical variation
+- **NHS Long Term Plan** — digital-first approach to healthcare
+- **NHS AI Lab** — testing and deploying AI in healthcare settings
+- **Federated Data Platform** — secure data sharing across trusts
+
+---
+
+## Market Gap
+
+No open-source tool currently combines all of these in one platform:
+
+- ✅ Dataset versioning with audit trail
+- ✅ Explainable ML predictions (SHAP)
+- ✅ Grounded AI with citations (RAG)
+- ✅ Interactive clinical dashboards
+- ✅ Automated report generation
+- ✅ Healthcare-domain-specific design
+
+Existing tools cover subsets: Tableau (dashboards only), Epic/Cerner (expensive,
+locked), ChatGPT (no grounding), Jupyter (not deployable).
+
+---
+
 ## Related Documentation
 
+- `/.agents/AGENTS.md` — Developer career context, portfolio strategy, agent rules
+- `.ai/llm-wiki/05_real_world_impact.md` — Full real-world impact analysis
 - docs/00_PROJECT_SCOPE.md
 - docs/01_PRD.md
 - docs/02_TRD.md

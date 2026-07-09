@@ -28,22 +28,23 @@ Every AI coding agent should follow this order before starting work:
 | `02_tech_stack.md` | Understand the selected technologies and why they were chosen. |
 | `03_repository_structure.md` | Navigate the repository and locate project components. |
 | `04_domain_knowledge.md` | Medical AI, RAG concepts, ML explainability, and domain-specific knowledge. |
+| `05_real_world_impact.md` | Real-world applications, NHS revenue impact, market gap, portfolio strategy, UK job market positioning. |
 
 Future pages:
 
 | File | Purpose |
 |------|---------|
-| `05_ai_pipeline.md` | End-to-end Retrieval-Augmented Generation workflow. |
-| `06_backend.md` | Backend architecture and service responsibilities. |
-| `07_frontend.md` | Frontend architecture and application structure. |
-| `08_database.md` | Database schema and persistence strategy. |
-| `09_api.md` | API conventions and endpoint organization. |
-| `10_coding_conventions.md` | Coding standards and engineering practices. |
-| `11_decision_log.md` | Summary of Architecture Decision Records (ADRs). |
-| `12_current_state.md` | Current implementation status. |
-| `13_current_sprint.md` | Active sprint goals and priorities. |
-| `14_next_tasks.md` | Upcoming implementation tasks. |
-| `15_glossary.md` | Common project terminology. |
+| `06_ai_pipeline.md` | End-to-end Retrieval-Augmented Generation workflow. |
+| `07_backend.md` | Backend architecture and service responsibilities. |
+| `08_frontend.md` | Frontend architecture and application structure. |
+| `09_database.md` | Database schema and persistence strategy. |
+| `10_api.md` | API conventions and endpoint organization. |
+| `11_coding_conventions.md` | Coding standards and engineering practices. |
+| `12_decision_log.md` | Summary of Architecture Decision Records (ADRs). |
+| `13_current_state.md` | Current implementation status. |
+| `14_current_sprint.md` | Active sprint goals and priorities. |
+| `15_next_tasks.md` | Upcoming implementation tasks. |
+| `16_glossary.md` | Common project terminology. |
 
 ---
 
@@ -96,6 +97,16 @@ Read:
 Read:
 
 - `03_repository_structure.md`
+
+---
+
+## Portfolio Strategy / Career Context / Real-World Applications
+
+Read:
+
+- `/.agents/AGENTS.md`
+- `05_real_world_impact.md`
+- `04_domain_knowledge.md`
 
 ---
 

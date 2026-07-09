@@ -94,4 +94,46 @@ Conventional Commits required (`feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `
 
 ---
 
-*Last reviewed: 2026-07-06. Update this file only when stack, architecture, or repo structure fundamentally change — not for routine feature work.*
+---
+
+## Developer Context & Career Goals
+
+**Full details:** `/.agents/AGENTS.md` — read that file for the complete picture.
+
+Summary: Developer is Subhranshu Panda, joining MSc Data Science at University of
+Glasgow (UK) in September 2026, graduating September 2027. Has a ₹45 Lakh SBI loan
+to repay via a visa-sponsorship full-time role in the UK healthcare/data science
+domain. This project is the primary portfolio piece for landing part-time roles,
+internships during the MSc, and a post-graduation full-time position. Every
+engineering decision should maximize portfolio impact for UK healthcare data
+science roles. The project must look like a senior engineer's production system,
+not a tutorial chatbot.
+
+---
+
+## Real-World Impact & Market Positioning
+
+**Full details:** `.ai/llm-wiki/05_real_world_impact.md`
+
+**Problem solved:** Clinical data workflows are fragmented across 5+ tools
+(Excel, Tableau, Jupyter, ChatGPT, Word). MedIntel AI consolidates data
+ingestion, analytics, explainable ML, grounded AI Q&A, and reporting into
+one platform.
+
+**NHS revenue impact:** Each avoided hospital readmission saves ~£1,700. A
+reduction from 18% to 15% readmission rate across 5,000 patients = £255,000
+saved per year per trust. Across ~220 NHS trusts, savings scale to millions.
+
+**Market gap:** No open-source tool combines dataset versioning + explainable ML
+(SHAP) + grounded RAG + clinical dashboards + automated reporting for healthcare.
+
+**Target employers:** NHS Digital, BenevolentAI, IQVIA, Huma, AstraZeneca,
+DeepMind Health, Optum, Babylon Health.
+
+**Visa sponsorship justification:** The project demonstrates 5 rare competencies
+simultaneously (production ML, healthcare domain, MLOps, explainable AI,
+full-stack engineering) — skills genuinely hard to find locally in the UK.
+
+---
+
+*Last reviewed: 2026-07-09. Update this file only when stack, architecture, or repo structure fundamentally change — not for routine feature work.*

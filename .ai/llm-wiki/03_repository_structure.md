@@ -38,6 +38,12 @@ reports/
 .github/
 : Issue/PR templates, CODEOWNERS, CONTRIBUTING (CI workflows deferred until Sprint 1 code lands)
 
+.agents/
+: Universal AI-agent context (AGENTS.md — career/financial context, UK target roles, visa justification, agent rules); read first per BOOTSTRAP.md
+
+.claude/
+: Claude Code slash commands (`/plan`, `/execute`, `/status`) and settings
+
 ---
 
 ## Root Files

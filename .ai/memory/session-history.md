@@ -26,6 +26,25 @@
 
 ---
 
+## 2026-07-09 — Universal agent context + NHS impact analysis
+
+**Agent:** Claude (Cowork)
+**Branch:** `develop`
+**Did:**
+- Added `.agents/AGENTS.md` (career/financial context, UK target roles, visa
+  justification) as mandatory first-read for all agents
+- Added `.ai/llm-wiki/05_real_world_impact.md` (NHS readmission ROI, market
+  gap, competency map, resume bullets)
+- Updated `04_domain_knowledge.md` (NHSX/GDPR/NICE/ICD, NHS programmes),
+  `index.md` (registered new page + reading guide), `BOOTSTRAP.md`
+  (AGENTS.md now required first read)
+- Updated `project-context.md` / `project-memory.md` with career context
+  cross-refs
+
+**Refs:** commit d52e21f
+
+---
+
 ## 2026-07-08 — GitHub hygiene pass (pre-Sprint 1)
 
 **Agent:** Claude (Sonnet, VS Code extension)

@@ -38,3 +38,29 @@ Handle these tasks immediately without suggesting Opus:
 - Add docstrings to all public functions
 - Keep functions focused and under 50 lines where possible
 - Preserve existing comments unrelated to your changes
+
+## Connectors and Skills
+
+Skills relevant to this project (Claude Code / Cowork `engineering` plugin, plus general document skills):
+
+| Skill | Use for |
+|---|---|
+| `engineering:architecture` | ADRs — evaluate/document design decisions (this repo already has 12) |
+| `engineering:system-design` | API design, data modeling, service boundaries for Sprint 1+ |
+| `engineering:code-review` | Reviewing diffs/PRs for security, performance, correctness |
+| `engineering:debug` | Structured reproduce → isolate → diagnose → fix sessions |
+| `engineering:testing-strategy` | Test plans once backend/frontend code lands |
+| `engineering:deploy-checklist` | Pre-deployment verification (Railway/Render, later AWS) |
+| `engineering:incident-response` | Triage/postmortem if something breaks post-deploy |
+| `engineering:tech-debt` | Refactor/code-health audits as the codebase grows |
+| `engineering:documentation` | READMEs, runbooks, API docs |
+| `engineering:standup` | Turning commit/PR activity into a standup-style update |
+| `docx` / `pdf` / `xlsx` | Generating reports, resumes, or data exports as deliverables |
+
+Connectors:
+
+| Connector | Status | Use for |
+|---|---|---|
+| GitHub (`plugin:engineering:github`) | Not yet authorized | PR/issue status, repo hygiene checks — authorize via Cowork Settings → Connectors → GitHub, or `claude mcp` in an interactive Claude Code session |
+
+Update this table when new skills are installed or connectors are authorized.

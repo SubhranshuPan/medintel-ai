@@ -33,6 +33,13 @@ Don't propose a different stack for core pillars without flagging it as an ADR-w
 - Report-only autonomy: propose changes, let Som approve; never auto-merge PRs.
 - Project status: Sprint 0 (docs/architecture/12 ADRs) is complete. Sprint 1 (backend foundation — auth, data models, API skeleton, issues #5–#10) is next but has NOT started (`backend/`, `frontend/`, `ml/` are still empty scaffolding). Per the Model Routing table below, Sprint 1 needs an Opus `/plan` pass before Sonnet execution begins.
 
+## Session-End Checklist (mandatory — Cowork and Claude Code, do this without being asked)
+- If any file changed this session (code, config, docs, ADRs): append a dated entry to `.ai/memory/session-history.md`, using the template already at the top of that file. Do this automatically at the end of the session, before signing off — don't wait for Som to request it.
+- If a significant decision was made (architecture, scope, tooling, tradeoffs): also add/update `.ai/memory/project-memory.md`.
+- If nothing in the working tree changed (pure discussion, planning, or research with no files touched): skip — don't create an empty log entry.
+- This is bookkeeping, not a git action — it's exempt from report-only autonomy. Still don't `git add`/`commit`/`push` on your own; the memory-file edit just sits in the working tree like any other doc change, to be committed as part of the normal PR flow.
+- Safety net: the `medintel-morning-repo-briefing` scheduled task (9:10 AM weekdays) checks the next morning and appends a session-history.md entry itself if it finds repo activity that wasn't logged — so a missed entry gets caught within a day either way.
+
 ## Model Routing (Token Optimization)
 
 This project uses a **two-model workflow** to minimize token costs:

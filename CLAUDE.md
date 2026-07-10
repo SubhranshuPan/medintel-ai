@@ -1,7 +1,37 @@
 # MedIntel AI — Claude Code Instructions
 
 ## Project Overview
-MedIntel AI — Medical intelligence platform.
+MedIntel AI — a five-pillar clinical intelligence platform: patient data platform, clinical analytics dashboard, ML risk-prediction engine with SHAP explainability, RAG-based AI decision support, and reporting/export. This is a career-critical portfolio project (not a hobby build) targeting UK healthcare/health-tech data science and ML engineering roles. Full context: `.agents/AGENTS.md` (read first) and `.ai/BOOTSTRAP.md`.
+
+## Tech Stack (per ADRs in `docs/architecture/adr/`)
+| Layer | Choice | ADR |
+|---|---|---|
+| Backend API | FastAPI | ADR-001 |
+| Frontend | React | ADR-002 |
+| Relational DB | PostgreSQL | ADR-003 |
+| Vector DB | Qdrant | ADR-004 |
+| LLM orchestration | LangChain | ADR-005 |
+| Containerization | Docker | ADR-006 |
+| CI/CD | GitHub Actions | ADR-007 |
+| Architecture style | Modular monolith | ADR-008 |
+| Data versioning | Dataset versioning scheme | ADR-009 |
+| Model serving | ML model serving pattern | ADR-010 |
+| Explainability | SHAP | ADR-011 |
+| Reporting | PDF/export pipeline | ADR-012 |
+
+Don't propose a different stack for core pillars without flagging it as an ADR-worthy deviation first.
+
+## Domain & Portfolio Requirements
+- Use healthcare-domain terminology (readmission risk, clinical pathway, patient cohort, ICD codes) — not generic tech jargon.
+- Treat all data as if it were real PHI even though it's synthetic: GDPR-aware handling, no shortcuts that wouldn't fly with real patient data.
+- Explainability is not optional — any predictive model needs SHAP output, since that's what NHS/UK regulators and interviewers care about.
+- Code, docs, and commits should read as senior-engineer output — recruiter-readable, interview-defensible. Document non-trivial decisions as ADRs (12 exist already in `docs/architecture/adr/`).
+- Don't dumb the project down or default to tutorial-tier patterns.
+
+## Workflow & Branch Policy
+- All work stays on `develop`. Do not propose or perform a `develop` → `main` merge — `main` updates only once a basic first-draft product exists. Don't flag "main is behind develop" as an action item.
+- Report-only autonomy: propose changes, let Som approve; never auto-merge PRs.
+- Project status: Sprint 0 (docs/architecture/12 ADRs) is complete. Sprint 1 (backend foundation — auth, data models, API skeleton, issues #5–#10) is next but has NOT started (`backend/`, `frontend/`, `ml/` are still empty scaffolding). Per the Model Routing table below, Sprint 1 needs an Opus `/plan` pass before Sonnet execution begins.
 
 ## Model Routing (Token Optimization)
 

@@ -1,1 +1,6 @@
 .claude/
+
+# Obsidian local UI state (noisy diffs, machine-specific) — keep app.json/
+# appearance.json/community-plugins.json tracked, ignore workspace layout
+.ai/.obsidian/workspace.json
+.ai/.obsidian/workspace-mobile.json

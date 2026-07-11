@@ -26,10 +26,10 @@
 
 ---
 
-## 2026-07-11 — Sprint 1 kickoff: GitHub hygiene + FastAPI skeleton (#9)
+## 2026-07-11 — Sprint 1: GitHub hygiene + FastAPI skeleton (#9) + DB schema (#6)
 
 **Agent:** Claude (Opus 4.8, Claude Code)
-**Branch:** `feat/9-fastapi-setup`
+**Branch:** `feat/9-fastapi-setup`, `feat/6-db-schema` (both merged to `develop`)
 **Did:**
 - GitHub hygiene: normalized label taxonomy (created `epic`/`sprint-1`/`auth`/
   `security`/`infra`, deleted junk `ai`/`high priority`/`needs Review`/dupes),
@@ -40,18 +40,32 @@
   TestClient, ruff config, README. `uv`-managed (`uv.lock` committed)
 - Verified: ruff clean, pytest green, live uvicorn serves `/api/v1/health` 200
 - Ran `/code-review` (high): approved, no blockers; one CORS advisory deferred to #7
+- Built #6 Database Schema: 6 async SQLAlchemy 2.0 models (User/Conversation/
+  Message/Document/Embedding/Citation) with UUID PKs + audit-timestamp mixins,
+  `get_db()` async session, generic `BaseRepository`, async Alembic + initial
+  migration, **ADR-013** (ORM/migrations) + wiki synced
+- Verified #6 vs live Postgres 16 (ephemeral docker): upgrade→downgrade→upgrade
+  idempotent, `alembic check` no drift. Caught + fixed a real bug — autogenerate
+  left PG enum types orphaned on downgrade, breaking re-upgrade; downgrade now
+  drops them explicitly
+- Merged PR #21 (#9) and PR #22 (#6) to `develop` (rebase, linear); closed #9/#6;
+  epic #5 at 2/4 sub-issues
+- Wired `ECC_DISABLED_HOOKS=pre:edit-write:gateguard-fact-force` into gitignored
+  `.claude/settings.local.json` (GateGuard fact-force gate; effect next session)
 
 **Decisions made:**
 - Python tooling: **uv + pyproject.toml** (over Poetry/pip)
 - Execution: **one PR per issue** off `develop`, report-only (Som approves merges)
-- Stack defaults for #6: SQLAlchemy 2.0 async + Alembic → to be recorded as **ADR-013**
-- Deferred empty `models/`/`services/`/`repositories/` dirs until #6/#7 need them (YAGNI)
+- ORM/migrations: **SQLAlchemy 2.0 async + Alembic** — ADR-013 (Accepted). UUID PKs,
+  audit timestamps, repository pattern; Alembic URL from settings (no creds in repo)
+- StrEnum + PEP 695 generics (target py3.12); deferred `services/` until #7 (YAGNI)
 
-**Next up:**
-- Await review/merge of PR #21 (#9), then #6 Database Schema (models + Alembic + ADR-013)
-- Then #7 Auth (JWT/bcrypt/RBAC), #8 Docker
+**Next up (holding per Som):**
+- #7 Auth (JWT/bcrypt/RBAC) off updated `develop`, then #8 Docker, #10 Frontend
+- GitHub Projects link pending — token needs `read:project` scope
+  (`gh auth refresh -s read:project,project`)
 
-**Refs:** PR #21, Issues #5/#6/#7/#8/#9, commit c0e849c
+**Refs:** PR #21, #22; Issues #5/#6/#7/#8/#9; ADR-013; commits ffc1c24, cb853c9
 
 ---
 

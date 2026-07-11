@@ -1,6 +1,13 @@
 .claude/
 
-# Obsidian local UI state (noisy diffs, machine-specific) — keep app.json/
-# appearance.json/community-plugins.json tracked, ignore workspace layout
+# Root-level Obsidian vault (local editor state, not project code)
+.obsidian/
+
+# Obsidian local UI state inside .ai vault (noisy diffs, machine-specific)
+# Keep app.json/appearance.json/community-plugins.json/core-plugins.json tracked
 .ai/.obsidian/workspace.json
 .ai/.obsidian/workspace-mobile.json
+.ai/.obsidian/graph.json
+
+# Personal Claude Code overrides (not shared)
+.claude/settings.local.json

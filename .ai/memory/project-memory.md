@@ -18,6 +18,16 @@
 - Any code path touching patient data must be flagged for privacy/compliance
   review. Never assume amount of de-identification already applied upstream —
   verify or ask.
+- **Python backend uses `uv`** (2026-07-11, Sprint 1 #9): `backend/pyproject.toml`
+  + committed `uv.lock`. Not Poetry/pip. Run via `uv run ...`. Settings use the
+  `MEDINTEL_` env prefix (pydantic-settings). Lint = `ruff`, tests = `pytest`+`httpx`.
+- **One PR per issue** off `develop` for Sprint 1 execution (report-only — Som
+  approves merges). Started 2026-07-11.
+- **GitHub label taxonomy** normalized 2026-07-11 to: Area (`backend`/`frontend`/
+  `ml`/`infra`/`database`/`auth`), Type (`feature`/`docs`/`bug`/`chore`/`epic`),
+  Priority (`P0-Critical`..`P3-Low`), Meta (`security`/`sprint-1`). Don't reintroduce
+  junk labels (`ai`, `high priority`, `needs Review`). Note: GitHub labels are
+  case-insensitive — creating `security` collides with an existing `Security`.
 
 ---
 

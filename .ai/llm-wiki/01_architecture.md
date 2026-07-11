@@ -81,6 +81,7 @@ Response
 - ADR-010 ML Model Serving
 - ADR-011 SHAP Explainability
 - ADR-012 Reporting & Export
+- ADR-013 ORM & Migrations (SQLAlchemy 2.0 + Alembic)
 
 See docs/architecture/adr/ for details.
 

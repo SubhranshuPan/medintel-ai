@@ -26,6 +26,35 @@
 
 ---
 
+## 2026-07-11 — Sprint 1 kickoff: GitHub hygiene + FastAPI skeleton (#9)
+
+**Agent:** Claude (Opus 4.8, Claude Code)
+**Branch:** `feat/9-fastapi-setup`
+**Did:**
+- GitHub hygiene: normalized label taxonomy (created `epic`/`sprint-1`/`auth`/
+  `security`/`infra`, deleted junk `ai`/`high priority`/`needs Review`/dupes),
+  relabeled + prioritized issues #5–#10, wrote acceptance-criteria bodies into
+  #5–#9, linked #6/#7/#8/#9 as native sub-issues of epic #5 (milestone already set)
+- Built #9 FastAPI skeleton in `backend/`: `create_app()` factory, pydantic-settings
+  config (`MEDINTEL_` prefix), logging, versioned `GET /api/v1/health`, pytest +
+  TestClient, ruff config, README. `uv`-managed (`uv.lock` committed)
+- Verified: ruff clean, pytest green, live uvicorn serves `/api/v1/health` 200
+- Ran `/code-review` (high): approved, no blockers; one CORS advisory deferred to #7
+
+**Decisions made:**
+- Python tooling: **uv + pyproject.toml** (over Poetry/pip)
+- Execution: **one PR per issue** off `develop`, report-only (Som approves merges)
+- Stack defaults for #6: SQLAlchemy 2.0 async + Alembic → to be recorded as **ADR-013**
+- Deferred empty `models/`/`services/`/`repositories/` dirs until #6/#7 need them (YAGNI)
+
+**Next up:**
+- Await review/merge of PR #21 (#9), then #6 Database Schema (models + Alembic + ADR-013)
+- Then #7 Auth (JWT/bcrypt/RBAC), #8 Docker
+
+**Refs:** PR #21, Issues #5/#6/#7/#8/#9, commit c0e849c
+
+---
+
 ## 2026-07-09 — Universal agent context + NHS impact analysis
 
 **Agent:** Claude (Cowork)

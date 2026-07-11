@@ -27,6 +27,9 @@ class Settings(BaseSettings):
     version: str = "0.1.0"
     cors_origins: list[str] = ["http://localhost:3000"]
 
+    # Async SQLAlchemy URL (asyncpg driver). Override per environment.
+    database_url: str = "postgresql+asyncpg://medintel:medintel@localhost:5432/medintel"
+
 
 @lru_cache
 def get_settings() -> Settings:

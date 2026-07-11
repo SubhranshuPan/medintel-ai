@@ -12,7 +12,7 @@ This vault *is* `.ai/` in the medintel-ai repo — no duplicate copy, no sync st
 - [[project-context]] — current state snapshot
 
 ## LLM Wiki (architecture & domain summaries)
-- [[index]] — wiki reading order and task-based guide
+- [[llm-wiki/index|wiki index]] — wiki reading order and task-based guide
 - [[00_project_overview]]
 - [[01_architecture]]
 - [[02_tech_stack]]

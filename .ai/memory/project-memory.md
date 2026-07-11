@@ -28,6 +28,12 @@
   Priority (`P0-Critical`..`P3-Low`), Meta (`security`/`sprint-1`). Don't reintroduce
   junk labels (`ai`, `high priority`, `needs Review`). Note: GitHub labels are
   case-insensitive — creating `security` collides with an existing `Security`.
+- **`.ai/` is an Obsidian vault** (2026-07-11): operated by the obsidian-second-brain
+  skill (`OBSIDIAN_VAULT_PATH` set globally). `_CLAUDE.md` at vault root is the
+  operating manual — read it before vault writes. New skill-generated notes get
+  AI-first frontmatter; legacy files (`memory/`, `llm-wiki/`, `rules/`, ...) keep
+  plain markdown. Vault ops logged in `.ai/Logs/YYYY-MM-DD.md`. No Daily/People/
+  Projects/Boards folders — project workspace, not a life OS.
 
 ---
 

@@ -26,6 +26,37 @@
 
 ---
 
+## 2026-07-11 — Tooling: obsidian-second-brain skill install + `.ai/` vault init
+
+**Agent:** Claude (Opus 4.8 / Fable 5, Claude Code)
+**Branch:** `develop` (working tree only, nothing committed)
+**Did:**
+- Installed `obsidian-second-brain` skill (eugeniughelbur/obsidian-second-brain)
+  to `~/.claude/skills/`; wired `OBSIDIAN_VAULT_PATH=D:/AI-Portfolio/medintel-ai/.ai`,
+  SessionStart hook (vault-context inject), inert PostCompact bg-agent hook, and
+  44 `/obsidian-*` slash commands into global Claude Code config (`~/.claude/`)
+- Windows fixes: bypassed missing `jq` (manual settings.json edits), used `python`
+  not broken `python3` Store alias, copied commands instead of symlinks
+- Ran `/obsidian-init` on the `.ai/` vault: created `_CLAUDE.md` (vault operating
+  manual encoding existing conventions — append-only memory, /docs > llm-wiki > code,
+  report-only autonomy), root `index.md` (catalog of all 22 notes), `log.md` pointer
+  + `Logs/2026-07-11.md` (per-day op log)
+- Fixed `Home.md` `[[index]]` wikilink shadowed by new root `index.md`
+  (now explicit `[[llm-wiki/index]]`)
+
+**Decisions made:**
+- `.ai/` doubles as the Obsidian vault — no separate copy, git-tracked with repo
+- Skipped skill's `Bases/` kanban files (no Daily/People/Projects/Tasks folders
+  here; vault is a project workspace, not a life OS — rule written into `_CLAUDE.md`)
+- Legacy vault files keep plain-markdown style; only new skill-generated notes
+  get AI-first frontmatter
+
+**Next up:**
+- Restart session so `_CLAUDE.md` + SessionStart hook take effect
+- Sprint 1 continues: issues #7 (auth) / #8 remaining under epic #5
+
+**Refs:** github.com/eugeniughelbur/obsidian-second-brain
+
 ## 2026-07-11 — Sprint 1: GitHub hygiene + FastAPI skeleton (#9) + DB schema (#6)
 
 **Agent:** Claude (Opus 4.8, Claude Code)

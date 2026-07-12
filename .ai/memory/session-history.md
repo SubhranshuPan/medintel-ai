@@ -48,11 +48,16 @@
 - Single `tsconfig.json` with `noEmit` + `tsc --noEmit` in build (skips project
   references); ESLint deferred (tsc covers type errors for a scaffold)
 
-**Next up:**
-- Sprint 1 complete after #10 merges — all children of epic #5 done + frontend up
-- Later: wire auth (`/api/v1/auth` JWT), add frontend CI job, first analytics screen
+**Merged:** PR #28 rebased to `develop` (commit 5239839); #10 closed manually
+(`Closes #10` only auto-fires on merge to the default branch, not `develop`);
+milestone **Sprint 1 - Backend Foundation** closed (11/11 issues). **Sprint 1
+complete.**
 
-**Refs:** Issue #10, PR (this branch), ADR-002, 02_TRD.md
+**Next up:**
+- Sprint 2 (Authentication milestone) or first frontend analytics screen + auth wiring
+- Add frontend CI job (lint/build); backlog hardening #24 (rate-limit) / #25 / #26
+
+**Refs:** Issue #10, PR #28, ADR-002, 02_TRD.md
 
 ## 2026-07-11 — Tooling: obsidian-second-brain skill install + `.ai/` vault init
 

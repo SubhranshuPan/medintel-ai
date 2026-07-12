@@ -34,6 +34,13 @@
   Priority (`P0-Critical`..`P3-Low`), Meta (`security`/`sprint-1`). Don't reintroduce
   junk labels (`ai`, `high priority`, `needs Review`). Note: GitHub labels are
   case-insensitive — creating `security` collides with an existing `Security`.
+- **Frontend stack** (2026-07-12, #10): React 19 + TypeScript, **Vite** build,
+  **Tailwind CSS v4** (`@tailwindcss/vite`, no `tailwind.config` for base use),
+  **React Router 7** — per the TRD-pinned stack, no new ADR. Typed `fetch` client
+  in `src/lib/api.ts` (`VITE_API_BASE_URL` + `/api/v1`). Scaffold (#10) is init
+  only; Zustand, RHF/Zod, Recharts, shadcn/ui, TanStack Query deferred until a
+  feature screen needs them. `tsconfig.json` uses `noEmit` + `tsc --noEmit` in the
+  build script (no project references); ESLint deferred (tsc covers a scaffold).
 - **`.ai/` is an Obsidian vault** (2026-07-11): operated by the obsidian-second-brain
   skill (`OBSIDIAN_VAULT_PATH` set globally). `_CLAUDE.md` at vault root is the
   operating manual — read it before vault writes. New skill-generated notes get
@@ -58,10 +65,10 @@
 
 ## Open Questions / Decisions Pending
 
-- **CI workflow timing:** `.github/workflows/` is intentionally still empty as
-  of 2026-07-08 — `backend/` and `frontend/` are `.gitkeep`-only scaffolds with
-  no code/tests yet. Add CI (lint + test, Python backend / Node frontend) once
-  Sprint 1 produces real code, not before.
+- **CI workflow timing:** RESOLVED for backend — `.github/workflows/ci.yml`
+  landed in #8 (2026-07-12): ruff + pytest on push/PR to `develop`,
+  `working-directory: backend`. **Frontend CI still pending** — add a Node
+  lint/build job when the frontend gains real code beyond the #10 scaffold.
 
 ---
 

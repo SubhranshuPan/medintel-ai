@@ -57,6 +57,43 @@
 
 **Refs:** github.com/eugeniughelbur/obsidian-second-brain
 
+## 2026-07-12 — Sprint 1: Authentication module (#7)
+
+**Agent:** Claude (Opus 4.8, Claude Code)
+**Branch:** `feat/7-auth` (off `develop`)
+**Did:**
+- Built #7 auth: bcrypt password hashing + JWT (python-jose, HS256) issue/verify
+  in `core/security.py`; `POST /api/v1/auth/register` + `/login`
+  (OAuth2PasswordRequestForm); `get_current_user` + `require_role` RBAC factory
+  in `api/deps.py`; `/users/me` (any auth) + admin-only `GET /users` (403 demo)
+- Added `schemas/auth.py` (Pydantic contracts), `repositories/user.py`
+  (`get_by_email`), `services/auth.py` (AuthService: register/authenticate);
+  JWT settings + prod-secret guard in `config.py`
+- **No new migration** — `users.role`/`hashed_password` already shipped in #6
+- Tests: 13 pass (8→13 auth incl. register, login, token expiry→401, RBAC
+  403/200, case-insensitive email). File-backed SQLite fixture (NullPool) so the
+  suite needs no Postgres
+- Ran `ecc:security-reviewer` on the diff: no rookie mistakes; fixed 2 HIGH
+  (JWT-secret fail-open guard hardened; constant-time login to stop timing-based
+  user enumeration) + email normalization + unused-claim guard comment
+
+**Decisions made:**
+- **Deviation from #7 spec:** dropped `passlib` for direct `bcrypt` — passlib
+  1.7.4 is unmaintained and hard-breaks against bcrypt 5.x. Kept `python-jose`
+  for JWT (sound on HS256). 72-byte secret truncation handled explicitly
+- Registration cannot self-assign `role` (no `role` field on `UserCreate`) —
+  privileged roles provisioned out-of-band; anti-privilege-escalation
+- Authorization always re-reads role from DB, never trusts the JWT `role` claim
+
+**Next up:**
+- Deferred security follow-ups (pre-deploy, not #7): rate-limiting on
+  `/login`+`/register`; consider swapping `python-jose`→`PyJWT`
+- #8 Docker, #10 Frontend
+
+**Refs:** PR (feat/7-auth → develop); Issue #7 (parent #5); depends on #6
+
+---
+
 ## 2026-07-11 — Sprint 1: GitHub hygiene + FastAPI skeleton (#9) + DB schema (#6)
 
 **Agent:** Claude (Opus 4.8, Claude Code)

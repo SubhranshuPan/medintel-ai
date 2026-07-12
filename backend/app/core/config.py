@@ -5,7 +5,11 @@ All settings use the ``MEDINTEL_`` env prefix (e.g. ``MEDINTEL_ENVIRONMENT``).
 
 from functools import lru_cache
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Dev-only placeholder; the settings validator refuses it outside dev/test.
+PLACEHOLDER_JWT_SECRET = "dev-insecure-change-me"
 
 
 class Settings(BaseSettings):
@@ -29,6 +33,31 @@ class Settings(BaseSettings):
 
     # Async SQLAlchemy URL (asyncpg driver). Override per environment.
     database_url: str = "postgresql+asyncpg://medintel:medintel@localhost:5432/medintel"
+
+    # JWT signing. The default is a dev-only placeholder; any non-dev/test
+    # environment MUST override MEDINTEL_JWT_SECRET with a strong value
+    # (enforced below). Generate one with: openssl rand -hex 32
+    jwt_secret: str = PLACEHOLDER_JWT_SECRET
+    jwt_algorithm: str = "HS256"
+    access_token_expire_minutes: int = 30
+
+    @model_validator(mode="after")
+    def _validate_jwt_secret(self) -> "Settings":
+        """Reject the placeholder or a weak secret outside development/test.
+
+        NOTE: ``environment`` defaults to ``development``, so a deployment that
+        forgets to set ``MEDINTEL_ENVIRONMENT`` will not trip this guard —
+        deployments MUST set both ``MEDINTEL_ENVIRONMENT`` and a strong
+        ``MEDINTEL_JWT_SECRET`` (see .env.example).
+        """
+        if self.environment in {"development", "test"}:
+            return self
+        if self.jwt_secret == PLACEHOLDER_JWT_SECRET or len(self.jwt_secret) < 32:
+            raise ValueError(
+                "MEDINTEL_JWT_SECRET must be a strong secret (>=32 chars) "
+                "outside development/test"
+            )
+        return self
 
 
 @lru_cache

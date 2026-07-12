@@ -23,6 +23,12 @@
   `MEDINTEL_` env prefix (pydantic-settings). Lint = `ruff`, tests = `pytest`+`httpx`.
 - **One PR per issue** off `develop` for Sprint 1 execution (report-only — Som
   approves merges). Started 2026-07-11.
+- **Auth stack** (2026-07-12, #7): direct `bcrypt` for password hashing (NOT
+  `passlib` — 1.7.4 is unmaintained and breaks against bcrypt 5.x), `python-jose`
+  HS256 for JWT. Authorization re-reads role from DB every request (JWT `role`
+  claim is informational only). Registration never sets role (no privilege
+  self-escalation). JWT secret from `MEDINTEL_JWT_SECRET`; startup refuses the
+  placeholder/weak secrets outside development/test.
 - **GitHub label taxonomy** normalized 2026-07-11 to: Area (`backend`/`frontend`/
   `ml`/`infra`/`database`/`auth`), Type (`feature`/`docs`/`bug`/`chore`/`epic`),
   Priority (`P0-Critical`..`P3-Low`), Meta (`security`/`sprint-1`). Don't reintroduce

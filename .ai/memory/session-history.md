@@ -57,6 +57,35 @@
 
 **Refs:** github.com/eugeniughelbur/obsidian-second-brain
 
+## 2026-07-12 — Sprint 1: Docker environment + CI (#8)
+
+**Agent:** Claude (Opus 4.8, Claude Code)
+**Branch:** `feat/8-docker` (off `develop`)
+**Did:**
+- `backend/Dockerfile` — multi-stage `uv` build, non-root runtime user, venv on PATH
+- `docker-compose.yml` (repo root) — api + `postgres:16-alpine` + `qdrant:v1.12.4`;
+  Postgres healthcheck + named volume `pgdata`; api waits for healthy DB, runs
+  `alembic upgrade head` then serves; api healthcheck via urllib on `/health`
+- `backend/.dockerignore`; `GET /api/v1/health/ready` readiness probe (DB `SELECT 1`
+  → 200/503) in `api/v1/health.py`
+- `.github/workflows/ci.yml` — CI on push/PR to develop: `uv sync` + `ruff` + `pytest`
+  (suite uses SQLite, so CI needs no Postgres service)
+- README: documented the compose workflow + probes; refreshed layout/planned sections
+- 14 tests pass (added readiness test), ruff clean, `docker compose config` valid
+
+**Decisions made:**
+- Qdrant runs as a container now but the app has **no** qdrant client dependency yet
+  (YAGNI — wired when the RAG pillar lands); readiness checks DB only
+- CI added now that real code/tests exist (previously deferred per project-memory)
+
+**Next up:**
+- **Manual verification pending:** live `docker compose up --build` (not run in-session)
+- #10 Frontend (React/Vite) — last Sprint 1 child
+
+**Refs:** PR (feat/8-docker → develop); Issue #8 (parent #5)
+
+---
+
 ## 2026-07-12 — Sprint 1: Authentication module (#7)
 
 **Agent:** Claude (Opus 4.8, Claude Code)

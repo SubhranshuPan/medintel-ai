@@ -26,6 +26,34 @@
 
 ---
 
+## 2026-07-12 — Sprint 1: Frontend initialization (#10)
+
+**Agent:** Claude (Opus 4.8, Claude Code)
+**Branch:** `feat/10-frontend-init` (off `develop`)
+**Did:**
+- Scaffolded `frontend/` by hand (no Vite CLI cruft): React 19 + TypeScript +
+  Vite 6, Tailwind CSS v4 via `@tailwindcss/vite`, React Router 7
+- App shell `AppLayout` (sidebar + header, `<Outlet/>`), routes: Clinical
+  Dashboard + Patient Cohorts placeholders, 404; index redirects to `/dashboard`
+- Typed fetch client `src/lib/api.ts` (`ApiError`, `getHealth`) hitting
+  `VITE_API_BASE_URL` + `/api/v1`; `HealthStatus` mirrors backend `HealthResponse`
+- Dashboard renders the live backend health probe (Connected/Unreachable badge)
+  as end-to-end proof the client reaches the API
+- `npm run build` green (tsc `--noEmit` typecheck + vite build, 46 modules)
+
+**Decisions made:**
+- Followed the TRD-pinned stack (02_TRD.md §Frontend); no new ADR needed
+- Ponytail-scoped to init only: deferred Zustand / React Hook Form+Zod / Recharts
+  / shadcn/ui components / TanStack Query until feature screens need them
+- Single `tsconfig.json` with `noEmit` + `tsc --noEmit` in build (skips project
+  references); ESLint deferred (tsc covers type errors for a scaffold)
+
+**Next up:**
+- Sprint 1 complete after #10 merges — all children of epic #5 done + frontend up
+- Later: wire auth (`/api/v1/auth` JWT), add frontend CI job, first analytics screen
+
+**Refs:** Issue #10, PR (this branch), ADR-002, 02_TRD.md
+
 ## 2026-07-11 — Tooling: obsidian-second-brain skill install + `.ai/` vault init
 
 **Agent:** Claude (Opus 4.8 / Fable 5, Claude Code)

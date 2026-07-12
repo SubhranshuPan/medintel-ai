@@ -1,0 +1,11 @@
+# Keep the build context small and free of local/dev cruft.
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.env
+*.db
+tests/
+.git/

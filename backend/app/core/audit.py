@@ -7,14 +7,20 @@ so a new route under an audited prefix is audited by default.
 
 Endpoints may enrich the record by setting ``request.state.audit_detail`` (dict)
 and ``request.state.audit_resource_id``.
+
+Implemented as a raw ASGI middleware, not ``BaseHTTPMiddleware``: the latter
+runs the downstream app in a spawned task, so ``call_next()`` can return before
+the request's own DB session has actually torn down — two separate SQLite
+connections in the test suite then deadlock each other (proven: the request's
+own session and this middleware's session hit a 30s busy-timeout every time).
+Awaiting the inner app directly, in this same task, guarantees the request's
+own session is fully closed before we open ours.
 """
 
 import uuid
-from collections.abc import Awaitable, Callable
 
-from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
-from starlette.responses import Response
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from app.core.db import AsyncSessionLocal
 from app.core.security import decode_access_token
@@ -55,39 +61,48 @@ def _actor(request: Request) -> tuple[uuid.UUID | None, str | None]:
         return None, None
 
 
-# ponytail: BaseHTTPMiddleware + one extra DB session per audited request.
-# Acceptable at portfolio scale; push the insert onto a background task/queue
-# if audit write latency ever matters.
-class AuditLogMiddleware(BaseHTTPMiddleware):
+# ponytail: one extra DB session per audited request. Acceptable at portfolio
+# scale; push the insert onto a background task/queue if write latency matters.
+class AuditLogMiddleware:
     """Persist one ``AuditLog`` row per request to an audited path."""
 
-    async def dispatch(
-        self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
-    ) -> Response:
-        path = request.url.path
-        if not path.startswith(AUDITED_PREFIXES):
-            return await call_next(request)
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
 
-        response = await call_next(request)
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http" or not scope["path"].startswith(AUDITED_PREFIXES):
+            await self.app(scope, receive, send)
+            return
 
+        request = Request(scope, receive=receive)
+        status_box: dict[str, int] = {}
+
+        async def send_wrapper(message: Message) -> None:
+            if message["type"] == "http.response.start":
+                status_box["status_code"] = message["status"]
+            await send(message)
+
+        await self.app(scope, receive, send_wrapper)
+
+        path = scope["path"]
         actor_id, actor_role = _actor(request)
         entry = AuditLog(
             actor_id=actor_id,
             actor_role=actor_role,
-            action=request.method,
+            action=scope["method"],
             resource_type=_resource_type(path),
             resource_id=getattr(request.state, "audit_resource_id", None) or _resource_id(path),
             path=path,
-            status_code=response.status_code,
+            status_code=status_box.get("status_code", 500),
             client_ip=request.client.host if request.client else None,
             user_agent=request.headers.get("user-agent", "")[:512] or None,
             detail=getattr(request.state, "audit_detail", None),
         )
-        # Own session: the request session is already closed by the time
-        # middleware regains control, and the audit write must not be rolled
-        # back with a failed request transaction — a failed write attempt is
-        # precisely what we need on record.
+        # Own session: the request session is already closed by the time we
+        # regain control (we awaited the inner app directly, no spawned task),
+        # and the audit write must not be rolled back with a failed request
+        # transaction — a failed write attempt is precisely what we need on
+        # record.
         async with AsyncSessionLocal() as session:
             session.add(entry)
             await session.commit()
-        return response

@@ -8,10 +8,12 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import get_settings
 from app.core.db import get_db
 from app.core.security import decode_access_token
 from app.models.user import User, UserRole
 from app.repositories.user import UserRepository
+from app.storage.object_store import LocalObjectStore, ObjectStore
 
 # tokenUrl drives the Swagger "Authorize" button; must match the login route.
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/auth/login")
@@ -58,3 +60,8 @@ def require_role(
         return user
 
     return _guard
+
+
+def get_object_store() -> ObjectStore:
+    """Dataset artifact storage (ADR-009). Local disk in dev."""
+    return LocalObjectStore(get_settings().storage_dir)

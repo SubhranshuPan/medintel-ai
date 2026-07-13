@@ -1,13 +1,19 @@
-"""Dataset / DatasetVersion model constraints (models-only; no endpoints yet, #30)."""
+"""Dataset / DatasetVersion model constraints (#30) and upload endpoint (#32)."""
 
 import asyncio
 from collections.abc import Callable
 
+from fastapi.testclient import TestClient
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
+from app.api.deps import get_object_store
+from app.models.audit import AuditLog
 from app.models.dataset import Dataset, DatasetVersion, ValidationStatus, VersionOrigin
 from app.models.user import User
+from app.storage.object_store import LocalObjectStore
+
+_CSV = b"patient_id,age\np1,40\np2,55\n"
 
 
 def _make_version(dataset_id, created_by_id, version_number: int) -> DatasetVersion:
@@ -83,3 +89,101 @@ def test_version_defaults(_engine: AsyncEngine, seed_user: Callable[..., User]) 
 def test_dataset_version_enums() -> None:
     assert {s.value for s in ValidationStatus} == {"pending", "passed", "failed"}
     assert {o.value for o in VersionOrigin} == {"upload", "cleaned"}
+
+
+def _override_store(client: TestClient, tmp_path) -> None:
+    client.app.dependency_overrides[get_object_store] = lambda: LocalObjectStore(
+        tmp_path / "store"
+    )
+
+
+def _register_and_login(client: TestClient, email: str) -> str:
+    client.post("/api/v1/auth/register", json={"email": email, "password": "s3cret-pass"})
+    resp = client.post(
+        "/api/v1/auth/login", data={"username": email, "password": "s3cret-pass"}
+    )
+    return resp.json()["access_token"]
+
+
+def _upload(
+    client: TestClient,
+    token: str,
+    *,
+    name: str = "Cohort",
+    filename: str = "cohort.csv",
+    content: bytes = _CSV,
+    content_type: str = "text/csv",
+):
+    return client.post(
+        "/api/v1/datasets",
+        data={"name": name},
+        files={"file": (filename, content, content_type)},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+
+def test_upload_creates_dataset_and_v1(client: TestClient, tmp_path) -> None:
+    _override_store(client, tmp_path)
+    token = _register_and_login(client, "up@nhs.uk")
+
+    resp = _upload(client, token)
+
+    assert resp.status_code == 201
+    body = resp.json()
+    assert body["latest_version"]["version_number"] == 1
+    assert body["latest_version"]["row_count"] == 2
+    assert body["latest_version"]["validation_status"] == "pending"
+
+
+def test_upload_requires_auth(client: TestClient, tmp_path) -> None:
+    _override_store(client, tmp_path)
+
+    resp = client.post(
+        "/api/v1/datasets", data={"name": "Cohort"}, files={"file": ("c.csv", _CSV, "text/csv")}
+    )
+
+    assert resp.status_code == 401
+
+
+def test_upload_rejects_non_csv(client: TestClient, tmp_path) -> None:
+    _override_store(client, tmp_path)
+    token = _register_and_login(client, "nc@nhs.uk")
+
+    resp = _upload(client, token, filename="cohort.txt", content_type="text/plain")
+
+    assert resp.status_code == 415
+
+
+def test_upload_rejects_malformed_csv(client: TestClient, tmp_path) -> None:
+    _override_store(client, tmp_path)
+    token = _register_and_login(client, "bad@nhs.uk")
+
+    resp = _upload(client, token, content=b"")
+
+    assert resp.status_code == 422
+
+
+def test_identical_content_is_stored_once(client: TestClient, tmp_path) -> None:
+    _override_store(client, tmp_path)
+    token = _register_and_login(client, "dup@nhs.uk")
+
+    first = _upload(client, token, name="Cohort A")
+    second = _upload(client, token, name="Cohort B")
+
+    assert (
+        first.json()["latest_version"]["checksum"] == second.json()["latest_version"]["checksum"]
+    )
+
+
+def test_upload_is_audited(
+    client: TestClient, tmp_path, audit_rows: Callable[[], list[AuditLog]]
+) -> None:
+    _override_store(client, tmp_path)
+    token = _register_and_login(client, "aud@nhs.uk")
+
+    resp = _upload(client, token)
+    dataset_id = resp.json()["id"]
+
+    rows = [r for r in audit_rows() if r.status_code == 201]
+    assert len(rows) == 1
+    assert rows[0].resource_id == dataset_id

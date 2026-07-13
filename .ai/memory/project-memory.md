@@ -94,6 +94,31 @@
   access token` on `POST /issues/{n}/sub_issues`. The `gh` CLI's own token works —
   use `gh api -X POST repos/<owner>/<repo>/issues/<parent>/sub_issues -F
   sub_issue_id=<id>` (note: the *database id*, not the issue number).
+- **`BaseHTTPMiddleware` deadlocks against a request's own DB session
+  (2026-07-13, #32):** `call_next()` runs the downstream app in a spawned task
+  and can return before that task's `get_db` session has actually closed. In
+  the test suite, `AuditLogMiddleware` opening a *second* SQLite connection at
+  that point deadlocked against the still-open one (consistent 30s hang on the
+  busy timeout, not a transient flake). Fixed by rewriting the middleware as a
+  raw ASGI middleware (`__call__(scope, receive, send)`, awaiting the inner app
+  directly in the same task) — the standard fix for this class of Starlette
+  issue, not a test-only workaround. Any future ASGI middleware that opens its
+  own DB session per request should use this pattern, not `BaseHTTPMiddleware`.
+- **Unanchored `.gitignore` patterns match at every directory depth
+  (2026-07-13, #32):** `backend/.gitignore` had a bare `storage/` line meant to
+  ignore the *runtime* upload directory (`backend/storage/datasets`, from
+  `LocalObjectStore`'s `storage_dir` setting). Git matched it against
+  `backend/app/storage/` too — the actual `ObjectStore`/`LocalObjectStore`
+  *source package* — so it was silently excluded from every commit since #32.
+  Local dev/tests kept passing because the files still existed untracked on
+  disk; a fresh CI checkout had no `app/storage/` at all, which is what broke
+  (ruff's import-sort couldn't even classify the import as first-party).
+  Caught by cloning the branch fresh and running `uv sync --frozen` +
+  `ruff check .` outside the working tree — **when CI fails but the local repo
+  passes, reproduce in an actual fresh clone before trusting any suggested
+  fix**, don't assume the working tree matches what's committed. Fix: anchor
+  gitignore patterns meant for a specific path with a leading slash
+  (`/storage/` matches only `backend/storage/`, not `backend/app/storage/`).
 
 ---
 

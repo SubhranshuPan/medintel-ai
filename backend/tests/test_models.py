@@ -25,6 +25,8 @@ def test_all_tables_registered() -> None:
         "documents",
         "embeddings",
         "citations",
+        "datasets",
+        "dataset_versions",
     }
 
 

@@ -7,7 +7,8 @@ counts or guessable patient identifiers) and audit timestamps (GDPR-aware).
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, func
+from sqlalchemy import JSON, DateTime, func
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -33,3 +34,9 @@ class TimestampMixin:
         onupdate=func.now(),
         nullable=False,
     )
+
+
+# Postgres is the deployment target (ADR-003), but the test suite runs SQLite
+# (tests/conftest.py). JSONB degrades to plain JSON there so metadata.create_all
+# works in both.
+JsonB = JSONB().with_variant(JSON(), "sqlite")

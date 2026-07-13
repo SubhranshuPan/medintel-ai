@@ -7,8 +7,11 @@ S3/MinIO backend implements in production.
 """
 
 import hashlib
+import re
 from pathlib import Path
 from typing import Protocol
+
+_DIGEST_RE = re.compile(r"^[0-9a-f]{64}$")
 
 
 class ObjectStore(Protocol):
@@ -44,4 +47,9 @@ class LocalObjectStore:
 
     def get(self, uri: str) -> bytes:
         digest = uri.removeprefix("file://")
+        # The digest becomes a path segment below — reject anything that
+        # isn't a bare sha256 hex string (e.g. "../../etc/passwd") before it
+        # ever reaches the filesystem, rather than trusting the caller.
+        if not _DIGEST_RE.match(digest):
+            raise ValueError(f"Invalid storage URI: {uri!r}")
         return (self.root / digest[:2] / digest).read_bytes()

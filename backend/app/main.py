@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.router import api_router
+from app.core.audit import AuditLogMiddleware
 from app.core.config import get_settings
 from app.core.logging import configure_logging
 
@@ -25,6 +26,9 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    # Outermost — added after CORS so Starlette's reverse-add order puts it
+    # last to run, seeing (and recording) the final status code the client gets.
+    app.add_middleware(AuditLogMiddleware)
     app.include_router(api_router)
     return app
 

@@ -26,6 +26,52 @@
 
 ---
 
+## 2026-07-13 — #31: audit_logs table + audit middleware
+
+**Agent:** Claude (Sonnet 5, Claude Code)
+**Branch:** `feat/31-audit-logs` (off `develop`, after #30/PR #37 merged)
+**Did:**
+- Executed plan steps 7–12 (issue #31) only.
+- `app/models/audit.py`: `AuditLog` model (append-only, nullable `actor_id`
+  with `ondelete RESTRICT`, `detail` JsonB for endpoint-enriched metadata).
+- `app/repositories/audit.py`: `AuditLogRepository` — no `delete` exposed.
+- `app/core/audit.py`: `AuditLogMiddleware` — intercepts by path prefix
+  (`/api/v1/datasets`), records actor from bearer token (best-effort, never
+  raises), status code, resource type/id. Runs its own DB session since it
+  can't use FastAPI DI.
+- `app/main.py`: registered the middleware *after* CORS (outermost — sees
+  final status code).
+- Generated `alembic/versions/30d783a96ae4_audit_logs_table.py` (no enums,
+  no manual downgrade fix needed).
+- `tests/conftest.py`: `client` fixture now monkeypatches
+  `app.core.audit.AsyncSessionLocal` to the test session factory (module-level
+  singleton, `dependency_overrides` can't reach it — same gotcha class as the
+  JSONB one); added `audit_rows()` fixture.
+- `tests/test_audit.py`: adapted from the plan's draft since the dataset
+  router doesn't exist until #32 — asserts against the 404 an unmatched route
+  produces (per the plan's own contingency note), proving prefix-based
+  interception and actor capture work independent of the endpoint existing.
+  Dropped the literal 403/"successful access" cases (no RBAC-gated route to
+  produce them yet); revisit once #32/#35 land.
+- `tests/test_models.py`: registry assertion gained `audit_logs` (anticipated
+  in the plan's risk list).
+
+**Decisions made:**
+- None new beyond what project-memory.md already records (audit-as-middleware,
+  module-singleton monkeypatch pattern).
+
+**Next up:**
+- #32 (CSV upload + object storage) — not started, per scope.
+
+**Verification:**
+- `uv run ruff check .` — clean.
+- `uv run pytest -q` — 20 passed.
+- `alembic upgrade head && alembic downgrade -1 && alembic upgrade head` — clean round-trip.
+
+**Refs:** Issue #31, epic #29
+
+---
+
 ## 2026-07-13 — #30: Dataset/DatasetVersion models + migration
 
 **Agent:** Claude (Sonnet 5, Claude Code)

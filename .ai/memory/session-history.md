@@ -26,6 +26,55 @@
 
 ---
 
+## 2026-07-13 — Sprint 2 kickoff: GitHub board + Opus planning pass
+
+**Agent:** Claude (Opus 4.8, Claude Code)
+**Branch:** `develop` (planning only — no feature branch yet)
+**Did:**
+- Followed `.ai/playbooks/sprint-2-kickoff.md` steps 1–2
+- **Step 1 (GitHub):** renamed milestone #5 `Sprint 2 - Authentication` →
+  `Sprint 2 - Patient Data Platform` (title was stale — auth shipped as #7 in
+  Sprint 1); created epic **#29** + children **#30–#36**, all linked as GitHub
+  sub-issues, milestoned, labelled per the existing taxonomy
+- Confirmed #24/#25/#26 already existed (auth hardening) — not recreated, left
+  unmilestoned as backlog
+- **Step 2 (Opus `/plan`):** wrote `.claude/current_plan.md` — per-issue steps,
+  file paths, code snippets, risks, verification, for Sonnet `/execute`
+
+**Decisions made:**
+- **ADR-014 → pandera** (to be written up in #33): schema-as-code, native pandas,
+  structured failure report → `validation_report` JSONB, no extra infra.
+  great-expectations rejected — Data Context / expectation suites / Data Docs are
+  a second config surface beside the ORM; same reasoning ADR-009 used against
+  DVC/LakeFS
+- **Audit logging = ASGI middleware, not per-endpoint calls.** A handler-level
+  `audit(...)` can be forgotten on a new endpoint and can never record 401/403
+  (the handler never runs). Middleware over the `/api/v1/datasets` prefix audits
+  every request incl. denials; endpoints enrich via `request.state.audit_detail`
+- **`audit_logs` (#31) sequenced before the upload endpoint (#32)** — deviates
+  from the playbook's issue order so the first patient-data endpoint never ships
+  unaudited
+- **`DELETE /datasets/{id}` = soft delete.** Hard delete would destroy artifacts
+  referenced by audit rows and future training runs, breaking the traceability
+  ADR-009 exists to provide. GDPR erasure = a separate, itself-audited purge
+  (out of Sprint 2 scope)
+- Two landmines documented in the plan: bare `JSONB` won't compile against the
+  SQLite test DB (needs `.with_variant(JSON, "sqlite")`); the audit middleware
+  binds `AsyncSessionLocal` at import, so `dependency_overrides` can't redirect
+  it — `conftest.py` must monkeypatch or tests write to the real Postgres
+
+**Next up:**
+- Execute #30 (Dataset/DatasetVersion models + migration) in a **fresh Sonnet
+  session**: branch `feat/30-dataset-models`, `/execute`, `/code-review`, PR.
+  One issue = one session (playbook §Context/token efficiency)
+- Then #31 → #32 → (#33 → #34) + #35 → #36. Frontend CI lint/build job lands
+  with #36 (carried-forward backlog)
+
+**Refs:** Epic #29, issues #30–#36, ADR-009, ADR-014 (pending, #33),
+`.ai/playbooks/sprint-2-kickoff.md`, `.claude/current_plan.md`
+
+---
+
 ## 2026-07-12 — Sprint 1: Frontend initialization (#10)
 
 **Agent:** Claude (Opus 4.8, Claude Code)

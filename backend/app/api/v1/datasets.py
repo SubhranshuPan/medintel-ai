@@ -15,7 +15,12 @@ from app.storage.object_store import ObjectStore
 
 router = APIRouter(prefix="/datasets", tags=["datasets"])
 
-_ALLOWED_CONTENT_TYPES = {"text/csv", "application/vnd.ms-excel", "application/octet-stream"}
+_ALLOWED_CONTENT_TYPES = {
+    "text/csv",
+    "application/csv",
+    "application/vnd.ms-excel",
+    "application/octet-stream",
+}
 
 
 def _service(db: AsyncSession, store: ObjectStore) -> DatasetService:
@@ -39,9 +44,9 @@ async def upload_dataset(
     PHI note: treated as patient-level data regardless of synthetic origin
     (TRD §9) — audited by AuditLogMiddleware, RBAC-gated to authenticated users.
     """
-    if file.content_type not in _ALLOWED_CONTENT_TYPES or not (file.filename or "").endswith(
-        ".csv"
-    ):
+    if file.content_type not in _ALLOWED_CONTENT_TYPES or not (
+        file.filename or ""
+    ).lower().endswith(".csv"):
         raise HTTPException(
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
             detail="Only .csv files are accepted",
@@ -61,10 +66,13 @@ async def upload_dataset(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             detail="File exceeds the upload size limit",
         ) from None
-    except InvalidCsvError as exc:
+    except InvalidCsvError:
+        # Deliberately generic: the underlying parser message can echo raw file
+        # bytes/content (e.g. UnicodeDecodeError's byte snippet) back to the
+        # client — treated as PHI, so it never belongs in an API response body.
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Invalid CSV: {exc}",
+            detail="File could not be parsed as CSV",
         ) from None
 
     # Enriches the AuditLogMiddleware row with the resource this request created.

@@ -5,6 +5,51 @@
 
 ---
 
+## 2026-07-13 — #32 CI failure + path-traversal hardening (post-merge)
+
+**Agent:** Claude (Sonnet 5, Claude Code)
+**Branch:** `fix/object-store-path-traversal` (off `develop`, after #32/PR #39 merged)
+**Did:**
+- PR #39's CI failed on `Lint (ruff)` with an `I001 unsorted import` error in
+  `tests/test_datasets.py` that did not reproduce locally. Investigated rather
+  than blindly applying the pasted "run `ruff check --fix`" suggestion — local
+  `ruff check .` was clean even against the exact failing commit's git blob,
+  which meant the working tree didn't match what was actually committed.
+- Root cause: `backend/.gitignore`'s bare `storage/` line (added in #32 to
+  ignore the runtime upload directory) also matched `backend/app/storage/` —
+  the `ObjectStore`/`LocalObjectStore` **source package** — so it was never
+  committed since #32. Confirmed via a fresh clone + `uv sync --frozen`
+  (ruff couldn't classify the import as first-party because the file
+  genuinely didn't exist in the repo; pytest would have hit
+  `ModuleNotFoundError` next had lint passed).
+- Fixed by anchoring the pattern (`/storage/`) and committing the
+  previously-excluded `app/storage/__init__.py` + `object_store.py`
+  (commit `a4fe94a`). Verified green against a second fresh clone before
+  trusting the real CI run.
+- A background security review of the merged #32 commit then flagged a path-
+  traversal gap in `LocalObjectStore.get()` (strips `file://`, joins the
+  remainder straight into a path with no validation). Not exploitable today
+  (only `put()`'s own sha256 output is ever stored/read back), but #33/#34
+  will read `storage_uri` off a `DatasetVersion` row and call `get()` on it,
+  so hardened now: `get()` rejects any URI whose digest isn't a bare 64-char
+  hex string. New `tests/test_object_store.py` (round-trip, dedup, traversal
+  rejection). Opened as PR #40 (not merged yet).
+
+**Decisions made:** None new — both are bug fixes, not design changes. Both
+new gotchas (BaseHTTPMiddleware deadlock, gitignore anchoring) recorded in
+project-memory.md.
+
+**Next up:** PR #40 awaiting merge, then #33 (ADR-014 + pandera validation).
+
+**Verification:**
+- Gitignore fix: fresh clone + `uv sync --frozen` + `ruff check .` + `pytest -q`
+  — clean/26 passed, matching the real CI run (`29254794515`) that went green.
+- Path-traversal fix: `uv run ruff check .` clean, `uv run pytest -q` — 29 passed.
+
+**Refs:** Issue #32, PR #39 (merged), PR #40 (open)
+
+---
+
 ## 2026-07-13 — #32: CSV upload endpoint + immutable object storage
 
 **Agent:** Claude (Sonnet 5, Claude Code)

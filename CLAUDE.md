@@ -25,7 +25,7 @@ Don't propose a different stack for core pillars without flagging it as an ADR-w
 - Use healthcare-domain terminology (readmission risk, clinical pathway, patient cohort, ICD codes) — not generic tech jargon.
 - Treat all data as if it were real PHI even though it's synthetic: GDPR-aware handling, no shortcuts that wouldn't fly with real patient data.
 - Explainability is not optional — any predictive model needs SHAP output, since that's what NHS/UK regulators and interviewers care about.
-- Code, docs, and commits should read as senior-engineer output — recruiter-readable, interview-defensible. Document non-trivial decisions as ADRs (12 exist already in `docs/architecture/adr/`).
+- Code, docs, and commits should read as senior-engineer output — recruiter-readable, interview-defensible. Document non-trivial decisions as ADRs (13 exist already in `docs/architecture/adr/`).
 - Don't dumb the project down or default to tutorial-tier patterns.
 
 ## Workflow & Branch Policy

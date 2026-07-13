@@ -1,10 +1,9 @@
 """AuditLogMiddleware: every request under an audited path prefix is recorded.
 
-The dataset router itself lands in #32 — until then, ``/api/v1/datasets``
-matches no route, so requests there 404. That is still enough to prove the
-prefix-based interception: the middleware audits by path, before routing
-decides whether an endpoint exists, so status/actor capture already works
-correctly and needs no changes once #32 adds real handlers.
+Only ``POST /api/v1/datasets`` exists until #35 adds the read/delete surface,
+so a GET here 405s (path matches, method doesn't) rather than 404ing. That is
+still enough to prove prefix-based interception: the middleware audits by
+path, before routing decides whether the method is allowed.
 """
 
 from collections.abc import Callable
@@ -27,12 +26,12 @@ def test_unauthenticated_dataset_prefix_request_is_audited(
     client: TestClient, audit_rows: Callable[[], list[AuditLog]]
 ) -> None:
     resp = client.get("/api/v1/datasets")
-    assert resp.status_code == 404  # no route yet (#32) — still an audited path
+    assert resp.status_code == 405  # GET not allowed on this path — still an audited path
 
     rows = audit_rows()
     assert len(rows) == 1
     row = rows[0]
-    assert row.status_code == 404
+    assert row.status_code == 405
     assert row.actor_id is None
     assert row.action == "GET"
     assert row.resource_type == "dataset"
@@ -48,7 +47,7 @@ def test_authenticated_dataset_prefix_request_records_actor(
     ).json()["access_token"]
 
     resp = client.get("/api/v1/datasets", headers={"Authorization": f"Bearer {token}"})
-    assert resp.status_code == 404  # still no route yet — the actor capture is what's under test
+    assert resp.status_code == 405  # method not allowed — the actor capture is what's under test
 
     rows = audit_rows()
     assert len(rows) == 1

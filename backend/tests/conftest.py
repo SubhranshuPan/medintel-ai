@@ -12,7 +12,7 @@ from collections.abc import AsyncGenerator, Callable, Iterator
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import select
+from sqlalchemy import event, select
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -37,6 +37,19 @@ def _engine(tmp_path) -> Iterator[AsyncEngine]:
     engine = create_async_engine(
         url, poolclass=NullPool, connect_args={"check_same_thread": False}
     )
+
+    # WAL + busy_timeout: with NullPool each checkout is a fresh sqlite
+    # connection, and the request's own session plus AuditLogMiddleware's
+    # separate session can otherwise hit "database is locked" (SQLite's
+    # default journal mode takes an exclusive lock on commit, and the default
+    # busy timeout is 0). WAL lets a writer and the not-yet-closed reader
+    # coexist; busy_timeout makes SQLite retry briefly instead of erroring.
+    @event.listens_for(engine.sync_engine, "connect")
+    def _set_sqlite_pragma(dbapi_connection, _connection_record) -> None:
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA journal_mode=WAL")
+        cursor.execute("PRAGMA busy_timeout=30000")
+        cursor.close()
 
     async def _create_schema() -> None:
         async with engine.begin() as conn:

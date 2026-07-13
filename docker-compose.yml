@@ -33,6 +33,9 @@ services:
       MEDINTEL_ENVIRONMENT: development
       # Service name `postgres` resolves on the compose network.
       MEDINTEL_DATABASE_URL: postgresql+asyncpg://medintel:medintel@postgres:5432/medintel
+      MEDINTEL_STORAGE_DIR: /app/storage/datasets
+    volumes:
+      - datasets:/app/storage
     depends_on:
       postgres:
         condition: service_healthy
@@ -54,3 +57,4 @@ services:
 volumes:
   pgdata:
   qdrantdata:
+  datasets:

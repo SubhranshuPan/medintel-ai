@@ -4,6 +4,7 @@ All settings use the ``MEDINTEL_`` env prefix (e.g. ``MEDINTEL_ENVIRONMENT``).
 """
 
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -40,6 +41,11 @@ class Settings(BaseSettings):
     jwt_secret: str = PLACEHOLDER_JWT_SECRET
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
+
+    # Object storage (ADR-009). Local disk in dev; an S3/MinIO backend swaps in
+    # behind the same ObjectStore protocol without touching callers.
+    storage_dir: Path = Path("./storage/datasets")
+    max_upload_bytes: int = 50 * 1024 * 1024  # 50 MB — reject bigger CSVs outright
 
     @model_validator(mode="after")
     def _validate_jwt_secret(self) -> "Settings":

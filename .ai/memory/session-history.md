@@ -5,6 +5,58 @@
 
 ---
 
+## 2026-07-13 — #32: CSV upload endpoint + immutable object storage
+
+**Agent:** Claude (Sonnet 5, Claude Code)
+**Branch:** `feat/32-csv-upload` (off `develop`, after #31/PR #38 merged)
+**Did:**
+- Executed plan steps 13–21 (issue #32) only.
+- Added `pandas` dependency + `uv lock`; `storage_dir`/`max_upload_bytes` settings.
+- `app/storage/object_store.py`: content-addressed `LocalObjectStore` (sha256
+  key, write-once) behind an `ObjectStore` Protocol; `get_object_store` dep.
+- `app/schemas/dataset.py`, `app/repositories/dataset.py` (`DatasetRepository`,
+  `DatasetVersionRepository`), `app/services/dataset.py` (`DatasetService` —
+  size guard, pandas parse for metadata only, schema hash, v1 creation).
+- `app/api/v1/datasets.py`: `POST /datasets` — content-type/extension guard
+  (415), size cap (413), malformed-CSV (422), enriches the audit row via
+  `request.state.audit_resource_id`/`audit_detail`. Registered in `router.py`.
+- `docker-compose.yml`/`.env.example`/`.gitignore`: storage volume + config.
+
+**Bugs found and fixed during verification (real bugs, not scope creep):**
+- **Deadlock: `AuditLogMiddleware` vs the request's own DB session.** First
+  upload test hung for exactly 30s and failed with `sqlite3.OperationalError:
+  database is locked`. Root cause: `BaseHTTPMiddleware.call_next()` runs the
+  downstream app in a spawned task and can return before that task's `get_db`
+  session has actually closed — so the middleware's separate SQLite connection
+  deadlocks against the still-open one. Not a test-only artifact: this is a
+  documented `BaseHTTPMiddleware` correctness gap. Fixed by rewriting
+  `app/core/audit.py`'s `AuditLogMiddleware` as a raw ASGI middleware
+  (`__call__(scope, receive, send)`, awaiting the inner app directly in the
+  same task) — the standard fix for this class of Starlette issue. No API
+  change; `request.state.audit_*` enrichment still works (same `scope["state"]`
+  dict backs every `Request` built from that scope).
+  test_audit.py updated for a real POST route existing.
+- Belt-and-suspenders: added `PRAGMA journal_mode=WAL` +
+  `PRAGMA busy_timeout=30000` on the test SQLite engine in `conftest.py`
+  (NullPool means every checkout is a fresh connection to the same file).
+- `test_audit.py`: GET `/api/v1/datasets` now 405 (route exists, method
+  doesn't), not 404 — updated both tests and the module docstring.
+
+**Decisions made:** None new beyond what project-memory.md records.
+
+**Next up:** #33 (ADR-014 + pandera validation) — not started, per scope.
+
+**Verification:**
+- `uv run ruff check .` — clean.
+- `uv run pytest -q` — 26 passed.
+- Skipped the plan's manual `docker compose up --build` + `curl` step — the
+  TestClient upload tests already exercise the full endpoint path end-to-end;
+  flagging the skip rather than silently omitting it.
+
+**Refs:** Issue #32, epic #29
+
+---
+
 ## Template
 
 ```

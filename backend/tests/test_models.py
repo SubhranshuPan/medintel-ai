@@ -27,6 +27,7 @@ def test_all_tables_registered() -> None:
         "citations",
         "datasets",
         "dataset_versions",
+        "audit_logs",
     }
 
 

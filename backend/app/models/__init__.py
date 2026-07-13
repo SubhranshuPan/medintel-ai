@@ -5,6 +5,7 @@ before mapper configuration (string-based relationships resolve) and before
 Alembic autogenerate inspects ``Base.metadata``.
 """
 
+from app.models.audit import AuditLog
 from app.models.base import Base
 from app.models.citation import Citation
 from app.models.conversation import Conversation
@@ -15,6 +16,7 @@ from app.models.message import Message, MessageRole
 from app.models.user import User, UserRole
 
 __all__ = [
+    "AuditLog",
     "Base",
     "Citation",
     "Conversation",

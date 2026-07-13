@@ -12,6 +12,7 @@ from collections.abc import AsyncGenerator, Callable, Iterator
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -20,10 +21,12 @@ from sqlalchemy.ext.asyncio import (
 )
 from sqlalchemy.pool import NullPool
 
+import app.core.audit as audit_module
 from app.core.db import get_db
 from app.core.security import hash_password
 from app.main import create_app
 from app.models import Base
+from app.models.audit import AuditLog
 from app.models.user import User, UserRole
 
 
@@ -45,7 +48,7 @@ def _engine(tmp_path) -> Iterator[AsyncEngine]:
 
 
 @pytest.fixture
-def client(_engine: AsyncEngine) -> Iterator[TestClient]:
+def client(_engine: AsyncEngine, monkeypatch: pytest.MonkeyPatch) -> Iterator[TestClient]:
     """TestClient bound to a fresh app using the isolated database."""
     session_factory = async_sessionmaker(_engine, class_=AsyncSession, expire_on_commit=False)
 
@@ -57,6 +60,11 @@ def client(_engine: AsyncEngine) -> Iterator[TestClient]:
             except Exception:
                 await session.rollback()
                 raise
+
+    # AuditLogMiddleware imports AsyncSessionLocal directly (middleware can't
+    # use FastAPI DI), so dependency_overrides never reaches it — without this,
+    # audited requests in tests would write to the developer's real Postgres.
+    monkeypatch.setattr(audit_module, "AsyncSessionLocal", session_factory)
 
     app = create_app()
     app.dependency_overrides[get_db] = _get_test_db
@@ -83,3 +91,19 @@ def seed_user(_engine: AsyncEngine) -> Callable[..., User]:
         return asyncio.run(_insert())
 
     return _seed
+
+
+@pytest.fixture
+def audit_rows(_engine: AsyncEngine) -> Callable[[], list[AuditLog]]:
+    """Read back every ``AuditLog`` row written during the test."""
+    factory = async_sessionmaker(_engine, class_=AsyncSession, expire_on_commit=False)
+
+    def _rows() -> list[AuditLog]:
+        async def _select() -> list[AuditLog]:
+            async with factory() as session:
+                result = await session.execute(select(AuditLog))
+                return list(result.scalars().all())
+
+        return asyncio.run(_select())
+
+    return _rows

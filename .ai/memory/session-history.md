@@ -26,6 +26,43 @@
 
 ---
 
+## 2026-07-13 — #30: Dataset/DatasetVersion models + migration
+
+**Agent:** Claude (Sonnet 5, Claude Code)
+**Branch:** `feat/30-dataset-models`
+**Did:**
+- Executed plan steps 1–6 (issue #30) only, per instruction to stop before #31.
+- `app/models/base.py`: added `JsonB = JSONB().with_variant(JSON(), "sqlite")` alias.
+- `app/models/dataset.py`: `Dataset` + `DatasetVersion` models, `ValidationStatus`/
+  `VersionOrigin` enums, `uq_dataset_version` constraint, self-referential
+  `parent_version_id` FK — per ADR-009.
+- Re-exported new models in `app/models/__init__.py`.
+- Generated `alembic/versions/7a5287c24302_dataset_versioning_tables.py`
+  (started Docker Desktop + `postgres` compose service to autogenerate against
+  real Postgres); hand-added the enum-drop lines to `downgrade()` (autogenerate
+  never emits those, same gotcha as `03bb608557d6`).
+- Updated `test_models.py` registry assertion; added `test_datasets.py`
+  (uniqueness constraint, version defaults, enum values).
+- Fixed a test bug hit during verification: capturing dataset IDs immediately
+  after `flush()`, before any `rollback()` — post-rollback ORM attribute access
+  triggers an implicit refresh that raises `MissingGreenlet` under asyncio.
+
+**Decisions made:**
+- None new — followed the two cross-cutting decisions already recorded in
+  project-memory.md (JSONB-on-SQLite, audit-as-middleware for later issues).
+
+**Next up:**
+- #31 (audit_logs + middleware) — not started, per scope.
+
+**Verification:**
+- `uv run ruff check .` — clean.
+- `uv run pytest -q` — 17 passed.
+- `alembic upgrade head && alembic downgrade -1 && alembic upgrade head` — clean round-trip against live Postgres.
+
+**Refs:** Issue #30, epic #29
+
+---
+
 ## 2026-07-13 — Sprint 2 kickoff: GitHub board + Opus planning pass
 
 **Agent:** Claude (Opus 4.8, Claude Code)

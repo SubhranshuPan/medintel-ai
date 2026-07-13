@@ -8,6 +8,7 @@ Alembic autogenerate inspects ``Base.metadata``.
 from app.models.base import Base
 from app.models.citation import Citation
 from app.models.conversation import Conversation
+from app.models.dataset import Dataset, DatasetVersion, ValidationStatus, VersionOrigin
 from app.models.document import Document
 from app.models.embedding import Embedding
 from app.models.message import Message, MessageRole
@@ -17,10 +18,14 @@ __all__ = [
     "Base",
     "Citation",
     "Conversation",
+    "Dataset",
+    "DatasetVersion",
     "Document",
     "Embedding",
     "Message",
     "MessageRole",
     "User",
     "UserRole",
+    "ValidationStatus",
+    "VersionOrigin",
 ]

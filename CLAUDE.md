@@ -3,6 +3,9 @@
 ## Project Overview
 MedIntel AI — a five-pillar clinical intelligence platform: patient data platform, clinical analytics dashboard, ML risk-prediction engine with SHAP explainability, RAG-based AI decision support, and reporting/export. This is a career-critical portfolio project (not a hobby build) targeting UK healthcare/health-tech data science and ML engineering roles. Full context: `.agents/AGENTS.md` (read first) and `.ai/BOOTSTRAP.md`.
 
+### Binding Scope Mandate (do not silently scope this down)
+MedIntel AI is not a demo RAG chatbot. It must remain, end to end, a **production-grade, industry-valuable healthcare data science platform**: multiple predictive ML models (not just one), a real MLOps stack (experiment tracking, model registry, continuous training, monitoring, A/B testing), a rigorous evaluation/fairness framework, and privacy/compliance architecture (HIPAA/GDPR-ready). Full detail and roadmap: `docs/00_VISION_ML_PLATFORM.md`. Never quietly drop or water down these components to save time — if a timeline conflict shows up, surface it explicitly to Som (as a flagged risk/tradeoff) rather than silently descoping. This mandate was set 2026-07-14 and supersedes any earlier "keep it minimal" framing elsewhere in this file or in `.ai/`.
+
 ## Tech Stack (per ADRs in `docs/architecture/adr/`)
 | Layer | Choice | ADR |
 |---|---|---|
@@ -25,7 +28,7 @@ Don't propose a different stack for core pillars without flagging it as an ADR-w
 - Use healthcare-domain terminology (readmission risk, clinical pathway, patient cohort, ICD codes) — not generic tech jargon.
 - Treat all data as if it were real PHI even though it's synthetic: GDPR-aware handling, no shortcuts that wouldn't fly with real patient data.
 - Explainability is not optional — any predictive model needs SHAP output, since that's what NHS/UK regulators and interviewers care about.
-- Code, docs, and commits should read as senior-engineer output — recruiter-readable, interview-defensible. Document non-trivial decisions as ADRs (14 exist already in `docs/architecture/adr/`).
+- Code, docs, and commits should read as senior-engineer output — recruiter-readable, interview-defensible. Document non-trivial decisions as ADRs (19 exist already in `docs/architecture/adr/`).
 - Don't dumb the project down or default to tutorial-tier patterns.
 
 ## Workflow & Branch Policy

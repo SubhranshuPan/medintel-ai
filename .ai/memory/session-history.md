@@ -5,6 +5,254 @@
 
 ---
 
+## 2026-07-14 — New docs 09–12 written; full documentation rollout complete
+
+**Agent:** Claude (Sonnet 5, Cowork)
+**Branch:** `develop`
+**Did:**
+- Wrote `09_DATA_PIPELINE.md`: ETL paths (CSV/PDF/HL7-future/MIMIC-III as
+  a structurally separate private path), feature engineering mechanics
+  (versioned against `dataset_version_id`, computed at training time not
+  precomputed), explicit recap that DVC/LakeFS were already rejected by
+  ADR-009 (not reopened here), data quality check categories, and the
+  MIMIC-III private ingestion path in full (never through the public
+  upload endpoint or object store).
+- Wrote `10_PATIENT_MANAGEMENT.md`: `Patient`/`MedicalRecord` schema
+  rationale (deliberately minimal identity fields — year-only DOB, no
+  names, opaque `external_ref`), OCR/extraction/review-queue pipeline,
+  medical concept extraction and coding, patient timeline (a read-only
+  assembly view, no new entity), and record correction via new-version
+  rows (never overwritten) mirroring `DatasetVersion`'s pattern.
+- Wrote `11_PRIVACY_COMPLIANCE.md`: opened with an explicit scope
+  statement that this is HIPAA/GDPR-*aware* architecture, not
+  certification or legal advice — no BAAs, not a covered entity. Covered
+  de-identification, encryption, access control, audit logging coverage
+  for the new entities (extends the existing middleware, no new
+  mechanism needed), GDPR rights (soft-delete pattern reused, hard-delete
+  explicitly flagged as not yet built), and named the real tension
+  between fairness testing's need for protected attributes and
+  re-identification-risk minimization, with a concrete resolution
+  (group-level aggregation only, row-level linkage discarded after
+  aggregation).
+- Wrote `12_MONITORING_ALERTS.md`: concrete Prometheus metric names/types,
+  five dashboard specs (system/model/fairness/cost/data-quality), a full
+  alert rule table, and an explicit "no real on-call rotation" honesty
+  statement (Slack/email, not paging) rather than overclaiming operational
+  maturity.
+- **This completes the full documentation rollout** from the scope
+  adoption two sessions ago: all 4 modified docs + all 7 new docs are
+  now written, alongside ADR-014–019 and `00_VISION_ML_PLATFORM.md`.
+- Verified all files landed correctly on disk despite several showing
+  stale `stat` mtimes (a mount quirk, not a real write failure — see
+  `.ai/memory/session-history.md`'s companion note in project memory).
+
+**Decisions made:** None new — this is documentation of mechanisms already
+decided in ADR-015–019, worked through to full specification.
+
+**Next up:** Implementation. Per `01_PRD.md` §11's phased build order,
+Phase 1 (Model 1 + SHAP + MLflow + core dashboard) is the next actual
+coding work — the current Sprint 2 backend work (#33/#34, dataset
+validation/management) still comes first since Phase 1 of the ML build
+depends on the data platform being usable. Recommend an Opus `/plan` pass
+before starting Phase 1/2 implementation given the scope now specified in
+`06_ML_MODELS.md`/`07_ML_OPS.md`, per the Model Routing guidance in
+`CLAUDE.md`.
+
+**Refs:** `09_DATA_PIPELINE.md`, `10_PATIENT_MANAGEMENT.md`,
+`11_PRIVACY_COMPLIANCE.md`, `12_MONITORING_ALERTS.md`, ADR-009, ADR-014,
+ADR-016, ADR-018, ADR-019
+
+---
+
+## 2026-07-14 — New docs 06–08 written (ML Models, ML Ops, Evaluation Framework)
+
+**Agent:** Claude (Sonnet 5, Cowork)
+**Branch:** `develop`
+**Did:**
+- Wrote `06_ML_MODELS.md`: full architecture for all three models —
+  problem framing, features, Optuna search space, evaluation targets,
+  explainability approach, serving strategy, and known limitations, each
+  per model. Explicit note that Model 3 (retrieval) has no SHAP equivalent
+  and needs citation-provenance transparency instead — flagged as the
+  RAG-appropriate analogue of the explainability requirement, not an
+  exemption from it.
+- Wrote `07_ML_OPS.md`: the shared machinery all three models sit on
+  top of — MLflow run hierarchy, registry lifecycle, continuous training
+  trigger types (all four enter the same Celery job, no separate
+  "automated" path), monitoring/alerting mechanics (including "missing
+  signal" as its own alert class, not just bad values), A/B rollout gate
+  mechanics, and cost tracking.
+- Wrote `08_EVALUATION_FRAMEWORK.md`: retrieval/generation/prediction
+  evaluation metrics and test sets, fairness testing methodology, ablation
+  studies, system-level benchmarking (vs. Framingham/CHADS2/PubMed/
+  UpToDate), and the continuous weekly evaluation pipeline — explicitly
+  distinguished from `07_ML_OPS.md`'s production *monitoring* (this doc is
+  pre-deployment/regression evaluation; monitoring is "is production still
+  okay"). Repeated the "methodology, not real-world validation" caveat
+  once more since it applies to every evaluation number too.
+
+**Decisions made:** None new — this is documentation of mechanisms
+ADR-010/015/016/017/019 already decided, worked through to implementation-
+level detail.
+
+**Next up:** `09_DATA_PIPELINE.md`, `10_PATIENT_MANAGEMENT.md`,
+`11_PRIVACY_COMPLIANCE.md`, `12_MONITORING_ALERTS.md` — the remaining four
+of the seven new docs.
+
+**Refs:** `06_ML_MODELS.md`, `07_ML_OPS.md`, `08_EVALUATION_FRAMEWORK.md`, ADR-010, ADR-011, ADR-015, ADR-016, ADR-017, ADR-019
+
+---
+
+## 2026-07-14 — 05_BACKEND_DESIGN.md brought current + extended (schema drift fixed)
+
+**Agent:** Claude (Sonnet 5, Cowork)
+**Branch:** `develop`
+**Did:**
+- Found `05_BACKEND_DESIGN.md` marked "Frozen v1.0" but still describing
+  only the original RAG-chatbot schema — it had never been updated across
+  Sprint 1–2 (auth/RBAC, datasets, audit logging) or the five-pillar
+  expansion, a bigger drift than the Sprint-status drift caught earlier
+  today. Verified actual current schema against `backend/app/models/*.py`
+  (User w/ RBAC roles, Conversation, Message, Document, Embedding,
+  Citation, Dataset, DatasetVersion, AuditLog) and rewrote §4 to document
+  what's real, not what v1.0 assumed.
+- Added §5: new entities for the full platform scope — `Patient`,
+  `MedicalRecord`, `ModelVersion`, `PredictionLog`, `RiskScore`,
+  `TreatmentOutcome`, `ModelMonitoringSnapshot`, `AnnotatedData` — with
+  purpose/key-fields per entity and an ER diagram, reconciling naming
+  against `02_TRD.md`'s earlier generic sketch (`ModelVersion`/
+  `PredictionLog` are now the authoritative names).
+- Added ML data-flow diagram (train → Optuna → MLflow → staging → A/B gate
+  → production → monitoring → retrain-on-drift, one pipeline not two) and
+  updated the RAG data-flow diagram for the 7-stage retrieval pipeline.
+  Added a Migration & Implementation Notes section sequencing the new
+  tables against the phased build order in `01_PRD.md` §11.
+- This completes all four "significantly modify" docs from the original
+  scope-adoption plan (`02_TRD.md`, `00_PROJECT_SCOPE.md`/`01_PRD.md`,
+  `03_APP_FLOW.md`, `05_BACKEND_DESIGN.md`).
+
+**Decisions made:** `ModelVersion`/`PredictionLog` (this doc) supersede the
+generic `models`/`training_runs`/`predictions` names sketched in
+`02_TRD.md` §14 — noted explicitly in both docs so they don't silently
+diverge.
+
+**Next up:** the seven new docs, `06_ML_MODELS.md` through
+`12_MONITORING_ALERTS.md` — starting with `06_ML_MODELS.md` since the
+other new docs (`07_ML_OPS.md`, `08_EVALUATION_FRAMEWORK.md`) reference its
+model definitions.
+
+**Refs:** ADR-010, ADR-011, ADR-015, ADR-016, ADR-017, ADR-018, ADR-019, `05_BACKEND_DESIGN.md`
+
+---
+
+## 2026-07-14 — Doc rollout for full-scope platform: TRD, Scope, PRD, App Flow updated
+
+**Agent:** Claude (Sonnet 5, Cowork)
+**Branch:** `develop`
+**Did:** (continuation of the same-day scope-adoption session — see the
+entry below for the ADR-015–019 background)
+- Updated `02_TRD.md` (v2.0 → v3.0): added ML Infrastructure/Continuous
+  Training, ML Monitoring & Alerting, and A/B Testing/Rollout as new
+  sections; expanded AI Architecture with the 7-stage RAG pipeline;
+  expanded Database Design, Security, Testing, Deployment, and Risks
+  sections against ADR-015–019.
+- Updated `00_PROJECT_SCOPE.md` (v2.0 → v3.0) — **not originally in the
+  task list, but added** because `01_PRD.md` explicitly defers to it as
+  the single source for NFRs/Success Metrics/Risk Register/Glossary;
+  updating PRD without it would have created immediate drift. Notably
+  corrected the Assumptions section: v2.0 said "no PHI stored / synthetic
+  only," which directly conflicted with ADR-018's real MIMIC-III adoption
+  — reworded to be precise about what MIMIC-III is (already de-identified
+  under HIPAA Safe Harbor, handled under its DUA) rather than silently
+  leaving the contradiction in place.
+- Updated `01_PRD.md` (v2.0 → v3.0): added FRs for Model 2 (treatment
+  outcome), Model 3 (literature ranker as an evaluated model, not just a
+  chat feature), and a new MLOps & Governance cross-cutting FR block.
+  Replaced the old "MVP / Stretch" release-plan framing with a 4-phase
+  **build sequence** framing — the old wording implied stretch items could
+  be dropped, which now contradicts `CLAUDE.md`'s binding scope mandate;
+  the new framing is explicit that phasing is not scope-cutting.
+- Updated `03_APP_FLOW.md` (v2.0 → v3.0): added flows for cohort
+  analysis/disease pattern mining, Model 2 (treatment outcome), continuous
+  training/Optuna, A/B rollout governance (including the "not promoted"
+  path surfaced to Admin, not silently retried), active learning feedback
+  capture, and updated the RAG chat flow for the 7-stage pipeline.
+
+**Decisions made:** None new beyond what ADR-015–019 already decided —
+this entry is documentation rollout, not new architecture. One framing
+correction: release planning uses "phased build order," never
+"MVP/stretch," going forward on this project, to stay consistent with the
+binding scope mandate.
+
+**Next up:**
+- `05_BACKEND_DESIGN.md` (new entities: Patient, MedicalRecord, RiskScore,
+  TreatmentOutcome, ModelVersion, PredictionLog, AnnotatedData, enhanced
+  AuditLog).
+- Then the seven new docs, `06_ML_MODELS.md` through `12_MONITORING_ALERTS.md`.
+
+**Refs:** ADR-015–019, `docs/00_VISION_ML_PLATFORM.md`, `02_TRD.md`,
+`00_PROJECT_SCOPE.md`, `01_PRD.md`, `03_APP_FLOW.md`
+
+---
+
+## 2026-07-14 — Full-scope platform vision adopted; ADR-015–019 written
+
+**Agent:** Claude (Sonnet 5, Cowork)
+**Branch:** `develop`
+**Did:**
+- Som brought a Copilot-drafted plan to expand MedIntel AI from the 5-pillar
+  MVP into a full production ML platform: 3 predictive models (risk
+  stratification, treatment outcome, advanced RAG literature ranker), full
+  MLOps (MLflow+Optuna continuous training, Prometheus/Grafana monitoring,
+  A/B testing), a rigorous evaluation/fairness framework, patient data
+  management, and HIPAA/GDPR compliance tooling. Flagged the tension with
+  existing constraints (single dev, MSc starts Sept 2026, Nov 2026
+  interview target, ADR-locked stack) before acting; Som explicitly chose
+  full-scope adoption, a binding CLAUDE.md mandate, and real (credentialed)
+  MIMIC-III access over the more conservative phased/synthetic-data options.
+- Added a binding scope mandate to `CLAUDE.md` (never silently descope this
+  platform) and created `docs/00_VISION_ML_PLATFORM.md` as the durable
+  north-star reference, preserving the original plan's detail.
+- Wrote 5 new ADRs to ground the new stack/process decisions before the
+  PRD/TRD/design docs get rewritten against them: **ADR-015** (continuous
+  training + Optuna HPO, extends ADR-010), **ADR-016** (Prometheus/Grafana
+  ML monitoring + fairness alerting), **ADR-017** (7-stage advanced RAG
+  retrieval pipeline: ColBERT dense + BM25 sparse + metadata filter + RRF
+  fusion + cross-encoder rerank + citation graph + temporal decay, extends
+  ADR-004/005), **ADR-018** (MIMIC-III as real training data source —
+  credentialing process documented, explicitly flagged as a schedule risk
+  rather than a formality), **ADR-019** (A/B testing + statistical
+  promotion gate + fairness-aware auto-promotion criteria, closes the gap
+  ADR-010/015 left open).
+- Logged the MIMIC-III credentialing dependency and the overall
+  scope/timeline tension as tracked risks in `project-memory.md`'s new
+  Risk Register section, each with an explicit owner/next action rather
+  than left implicit.
+- Updated ADR-count references (14 → 19) in `CLAUDE.md` and `.ai/_CLAUDE.md`.
+- **Not yet done** (tracked as open Cowork tasks, same session): updates to
+  `01_PRD.md`, `02_TRD.md`, `03_APP_FLOW.md`, `05_BACKEND_DESIGN.md`, and
+  new docs `06_ML_MODELS.md` through `12_MONITORING_ALERTS.md`. This is
+  deliberately sequenced after the ADRs so those docs aren't written
+  against undecided stack choices.
+
+**Decisions made:**
+- Full platform scope adopted as binding (not aspirational) — see
+  `docs/00_VISION_ML_PLATFORM.md` and `CLAUDE.md`.
+- pandera-style "decide via ADR before documenting" convention extended to
+  this entire scope expansion — 5 ADRs written before any PRD/TRD edits.
+- Real MIMIC-III access chosen over synthetic-only; interim synthetic-data
+  fallback while credentialing is pending, so Sprint velocity doesn't stall.
+
+**Next up:**
+- Start MIMIC-III credentialing today (PhysioNet account + CITI course) —
+  see Risk Register.
+- Work through the remaining doc tasks in dependency order: TRD → PRD →
+  APP_FLOW → BACKEND_DESIGN → the 7 new docs.
+
+**Refs:** ADR-015, ADR-016, ADR-017, ADR-018, ADR-019, `docs/00_VISION_ML_PLATFORM.md`
+
+---
+
 ## 2026-07-14 — Docs drift fix + ADR-014 (schema validation decision)
 
 **Agent:** Claude (Sonnet 5, Cowork)

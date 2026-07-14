@@ -65,7 +65,7 @@ No `Daily/`, `People/`, `Projects/`, `Tasks/`, or `Boards/` folders — this is 
 
 ## Active Context
 
-**Project:** MedIntel AI — five-pillar clinical intelligence platform (FastAPI/React/PostgreSQL/Qdrant/LangChain, 14 ADRs).
+**Project:** MedIntel AI — five-pillar clinical intelligence platform (FastAPI/React/PostgreSQL/Qdrant/LangChain, 19 ADRs). Full-scope production ML platform per `docs/00_VISION_ML_PLATFORM.md` (adopted 2026-07-14) — see `CLAUDE.md`'s binding scope mandate.
 **Current phase:** Sprint 1 (backend foundation, issues #5–#10) complete — 11/11 issues, milestone closed 2026-07-12. Sprint 2 (Patient Data Platform, issues #30–#34) in progress: dataset models (#30), audit logging (#31), CSV upload/object storage (#32) shipped; schema validation (#33, see ADR-014) and dataset management endpoints (#34) next.
 **Branch policy:** all work on `develop`; `main` waits for first-draft product.
 **Autonomy:** report-only — propose, Som approves. Memory-file bookkeeping is exempt (see repo `CLAUDE.md`).

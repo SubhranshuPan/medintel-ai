@@ -24,6 +24,10 @@
   First tag since `v0.1.0` (67 commits back).
 - Created milestone **#8 `Platform Vision & Architecture`** for cross-cutting
   scope/architecture work and assigned PR #41 to it (this work is not Sprint 2).
+- Pushed the v0.2.0 bookkeeping commit (`b42c1fe`) **directly to `develop`**,
+  which Som flagged. Tightened the policy in response: opened and merged
+  [PR #42](https://github.com/SubhranshuPan/medintel-ai/pull/42) (`c5dd7e5`) —
+  `CLAUDE.md` now forbids direct pushes to `develop` outright.
 
 **Decisions made:**
 - **Release tagging convention** (now in `project-memory.md`): annotated semver
@@ -31,6 +35,14 @@
   scope/architecture milestone even with no runtime change.
 - **Milestone taxonomy**: Sprint milestones stay sprint-scoped; cross-cutting
   vision/architecture work goes to #8.
+- **Every commit goes through a PR — no exceptions** (PR #42): including
+  bookkeeping (`.ai/memory/*`, doc touch-ups). There is no "too small for a PR"
+  category, and no direct pushes to `develop`. The old Session-End Checklist
+  wording implied bookkeeping could be committed directly; that loophole is
+  closed. *Writing* the memory entry stays exempt from report-only autonomy (do
+  it unprompted); *landing* it does not (feature branch + PR, Som merges).
+- **Git writes go through the `gh` CLI, reads through the GitHub MCP** — also
+  now recorded in `CLAUDE.md`, not just project memory.
 
 **Correction to prior session-history:** the earlier claim that this sandbox has
 no push credentials was **wrong**. `git push` and the `gh` CLI both work

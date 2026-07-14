@@ -5,6 +5,47 @@
 
 ---
 
+## 2026-07-14 — Full-scope docs shipped: PR #41 merged, released as v0.2.0
+
+**Agent:** Claude (Opus 4.8, Claude Code)
+**Branch:** `docs/full-scope-ml-platform-vision` → merged to `develop`
+**Did:**
+- Committed the whole full-scope documentation rollout (accumulated over the
+  previous two sessions, still uncommitted in the working tree) as four
+  semantic commits on `docs/full-scope-ml-platform-vision`: (1) scope mandate
+  + `00_VISION_ML_PLATFORM.md` + ADR-015–019, (2) the five updated core docs
+  (Scope/PRD/TRD/App Flow/Backend Design), (3) the seven new specs (06–12),
+  (4) the memory log.
+- Opened [PR #41](https://github.com/SubhranshuPan/medintel-ai/pull/41)
+  (`documentation` + `ml` labels), merged it into `develop` as a merge commit
+  (`1a50ebe`) — 22 files, +3909/−287.
+- Cut annotated tag **`v0.2.0`** on `develop` and published the
+  [GitHub Release](https://github.com/SubhranshuPan/medintel-ai/releases/tag/v0.2.0).
+  First tag since `v0.1.0` (67 commits back).
+- Created milestone **#8 `Platform Vision & Architecture`** for cross-cutting
+  scope/architecture work and assigned PR #41 to it (this work is not Sprint 2).
+
+**Decisions made:**
+- **Release tagging convention** (now in `project-memory.md`): annotated semver
+  tags cut on `develop`, not `main`; a minor bump is warranted for a
+  scope/architecture milestone even with no runtime change.
+- **Milestone taxonomy**: Sprint milestones stay sprint-scoped; cross-cutting
+  vision/architecture work goes to #8.
+
+**Correction to prior session-history:** the earlier claim that this sandbox has
+no push credentials was **wrong**. `git push` and the `gh` CLI both work
+(authenticated as `SubhranshuPan`). Only the GitHub *MCP* token is read-only
+(403 on writes). Use `gh` for writes, MCP for reads. Logged as a gotcha in
+`project-memory.md`. Also note ADR-014 was already committed in `1f7fdce`, so it
+is **not** part of the v0.2.0 diff despite earlier drafts saying "ADR-014–019".
+
+**Next up:** Unchanged — Sprint 2 backend (#33/#34, dataset validation and
+management endpoints) still comes first, then Phase 1 of the ML build
+(Model 1 + SHAP + MLflow + core dashboard) per `01_PRD.md` §11. An Opus `/plan`
+pass before Phase 1/2 remains the recommendation.
+
+---
+
 ## 2026-07-14 — New docs 09–12 written; full documentation rollout complete
 
 **Agent:** Claude (Sonnet 5, Cowork)

@@ -3,6 +3,10 @@
 **Status:** Updated — reflects full production ML platform scope
 (`00_VISION_ML_PLATFORM.md`, adopted 2026-07-14), supersedes v2.0's
 five-pillar-only framing (which itself superseded v1.0's RAG-only framing).
+**Released as:** `v0.2.0` (2026-07-14, PR #41, milestone
+*Platform Vision & Architecture*) — this scope is now the tagged baseline, not a
+proposal. Narrowing it requires an explicit flagged tradeoff to Som, per the
+Binding Scope Mandate in `CLAUDE.md`.
 **Last Updated:** July 2026
 
 ---

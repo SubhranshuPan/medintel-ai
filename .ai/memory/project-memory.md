@@ -68,6 +68,16 @@
   AI-first frontmatter; legacy files (`memory/`, `llm-wiki/`, `rules/`, ...) keep
   plain markdown. Vault ops logged in `.ai/Logs/YYYY-MM-DD.md`. No Daily/People/
   Projects/Boards folders — project workspace, not a life OS.
+- **Release tagging = annotated semver tags on `develop`** (2026-07-14, v0.2.0):
+  `git tag -a vX.Y.Z` + `gh release create`. Tags are cut on `develop`, not `main`
+  — `main` stays untouched until a first-draft product exists (see the branch
+  policy in `CLAUDE.md`). Minor bump for scope/architecture milestones, not just
+  shipped code: `v0.2.0` marks the full-scope ML platform adoption (docs only, no
+  runtime change). Releases link the `v(N-1)...vN` compare view for the changelog.
+- **Milestone `Platform Vision & Architecture` (#8)** (2026-07-14): the home for
+  cross-cutting scope/vision/architecture work (ADRs, core specs) that isn't tied
+  to a single sprint. Don't file this kind of work under a Sprint milestone —
+  Sprint milestones (#3–#7) track sprint-scoped delivery only.
 
 ---
 
@@ -81,6 +91,14 @@
   machine. Installed via `winget install --id GitHub.cli -e`, then
   `gh auth login --web`. If a fresh session finds `gh` missing again, that's
   expected on a new machine/container — same two commands fix it.
+- **The GitHub *MCP* token is read-only; the `gh` CLI token is not (2026-07-14):**
+  `mcp__github__create_pull_request` fails with `403 Resource not accessible by
+  personal access token`, and a prior session wrongly generalized that into "no
+  push credentials in this sandbox" and hand-wrote manual steps for Som. Wrong.
+  `git push` and `gh` (authenticated as `SubhranshuPan` via keyring, `gho_*`) both
+  work fine. **Use `gh` for all writes** (PR create/merge, labels, milestones,
+  releases); use the GitHub MCP for reads only. Before claiming an operation is
+  impossible, test it — don't infer a credential gap from one tool's 403.
 - **`JSONB` breaks the test suite (2026-07-13):** Postgres is the target, but
   `tests/conftest.py` runs on SQLite, where a bare `JSONB` column fails
   `Base.metadata.create_all`. Declare JSON columns as

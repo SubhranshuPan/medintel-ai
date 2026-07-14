@@ -74,6 +74,12 @@
   policy in `CLAUDE.md`). Minor bump for scope/architecture milestones, not just
   shipped code: `v0.2.0` marks the full-scope ML platform adoption (docs only, no
   runtime change). Releases link the `v(N-1)...vN` compare view for the changelog.
+- **Every commit goes through a PR — including bookkeeping** (2026-07-14, PR #42):
+  no direct pushes to `develop`, no "too small for a PR" category. `.ai/memory/*`
+  updates, doc touch-ups, and scope-status edits all get a feature branch + PR like
+  any other change. Supersedes the older reading of the Session-End Checklist, which
+  implied bookkeeping could be committed straight to `develop` (that's how `b42c1fe`
+  slipped through). Writing the memory entry is still unprompted; *landing* it isn't.
 - **Milestone `Platform Vision & Architecture` (#8)** (2026-07-14): the home for
   cross-cutting scope/vision/architecture work (ADRs, core specs) that isn't tied
   to a single sprint. Don't file this kind of work under a Sprint milestone —

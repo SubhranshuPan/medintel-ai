@@ -123,6 +123,37 @@
 
 ---
 
+## Risk Register
+
+- **MIMIC-III credentialing (opened 2026-07-14, ADR-018):** Models 1–2 need
+  real clinical training data; access requires a PhysioNet account + CITI
+  Program "Data or Specimens Only Research" course completion + a
+  credentialed-access application + signed Data Use Agreement. This is an
+  external process (days to a few weeks) outside the project's control and
+  sits on the critical path for validating Models 1–2 against real data.
+  **Immediate action: start the PhysioNet account + CITI course today**,
+  independent of and in parallel with all other Sprint work — nothing else
+  in Model 1/2 development blocks on starting it. Until access is granted,
+  model development proceeds against synthetic data (already the default
+  per the project's GDPR-aware stance) so Sprint velocity doesn't stall.
+  Re-validate models against MIMIC-III once access lands — re-running an
+  already-built pipeline, not new development. Owner: Som. Status: not yet
+  started as of 2026-07-14.
+- **Full-scope platform timeline risk (opened 2026-07-14):** the platform
+  vision (`docs/00_VISION_ML_PLATFORM.md`, adopted 2026-07-14) commits to 3
+  ML models, full MLOps (continuous training, A/B testing, monitoring), a
+  7-stage RAG pipeline, and HIPAA/GDPR compliance tooling — a materially
+  larger scope than the original 5-pillar MVP, against an unchanged
+  November 2026 interview-readiness target and an MSc starting September
+  2026 that will reduce available hours. This is flagged, not resolved:
+  per `CLAUDE.md`'s binding scope mandate, the response to a timeline
+  conflict is to surface it explicitly (this entry) rather than silently
+  descope. If velocity data through Sprint 3–4 shows the full scope isn't
+  achievable by November, that's a decision for Som to make explicitly,
+  informed by real progress data — not something to pre-empt now.
+
+---
+
 ## Open Questions / Decisions Pending
 
 - **CI workflow timing:** RESOLVED for backend — `.github/workflows/ci.yml`
@@ -130,6 +161,13 @@
   `working-directory: backend`. **Frontend CI still pending** — scheduled into
   Sprint 2 **#36** (Node `npm ci` + `npm run build`, which already typechecks via
   `tsc --noEmit`), landing with the first real frontend screen.
+- **Documentation rollout for the expanded platform vision — RESOLVED
+  2026-07-14:** ADR-015–019 written; `02_TRD.md`, `00_PROJECT_SCOPE.md`,
+  `01_PRD.md`, `03_APP_FLOW.md`, `05_BACKEND_DESIGN.md` all updated;
+  `06_ML_MODELS.md` through `12_MONITORING_ALERTS.md` all written. Full
+  detail across four `session-history.md` entries dated 2026-07-14. Next
+  real milestone is implementation (Phase 1 of `01_PRD.md` §11), not more
+  documentation — don't re-open this as a pending item.
 
 ---
 

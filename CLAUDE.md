@@ -34,13 +34,15 @@ Don't propose a different stack for core pillars without flagging it as an ADR-w
 ## Workflow & Branch Policy
 - All work stays on `develop`. Do not propose or perform a `develop` → `main` merge — `main` updates only once a basic first-draft product exists. Don't flag "main is behind develop" as an action item.
 - Report-only autonomy: propose changes, let Som approve; never auto-merge PRs.
+- **Never push directly to `develop`** (set 2026-07-14, after `b42c1fe` went straight to `develop`). *Every* commit lands via a feature branch and a PR — including bookkeeping-only changes (`.ai/memory/*`, doc touch-ups, scope-status edits). There is no "too small for a PR" category. Branch naming follows the existing pattern (`docs/…`, `fix/…`, `feat/…`).
+- Git writes go through the **`gh` CLI**, not the GitHub MCP server — the MCP token is read-only and 403s on writes (`create_pull_request`, labels, milestones, releases). Use the MCP for reads. `git push` and `gh` are both authenticated; don't assume credentials are missing without testing.
 - Project status: Sprint 0 (docs/architecture, 12 ADRs) is complete. Sprint 1 (backend foundation — auth, data models, API skeleton, issues #5–#10) is complete — 11/11 issues, milestone closed 2026-07-12. Sprint 2 (Patient Data Platform — dataset models, audit logging, CSV upload/object storage, issues #30–#32) is in progress; #33/#34 (schema validation, dataset management endpoints) are next.
 
 ## Session-End Checklist (mandatory — Cowork and Claude Code, do this without being asked)
 - If any file changed this session (code, config, docs, ADRs): append a dated entry to `.ai/memory/session-history.md`, using the template already at the top of that file. Do this automatically at the end of the session, before signing off — don't wait for Som to request it.
 - If a significant decision was made (architecture, scope, tooling, tradeoffs): also add/update `.ai/memory/project-memory.md`.
 - If nothing in the working tree changed (pure discussion, planning, or research with no files touched): skip — don't create an empty log entry.
-- This is bookkeeping, not a git action — it's exempt from report-only autonomy. Still don't `git add`/`commit`/`push` on your own; the memory-file edit just sits in the working tree like any other doc change, to be committed as part of the normal PR flow.
+- Writing the memory entry is bookkeeping, not a git action — it's exempt from report-only autonomy, so do it unprompted. Landing it is *not* exempt: the edit sits in the working tree like any other doc change and goes through a feature branch + PR (see Branch Policy above — no direct pushes to `develop`, and no auto-merge). Don't `git add`/`commit`/`push` without Som asking.
 - Safety net: the `medintel-morning-repo-briefing` scheduled task (9:10 AM weekdays) checks the next morning and appends a session-history.md entry itself if it finds repo activity that wasn't logged — so a missed entry gets caught within a day either way.
 
 ## Model Routing (Token Optimization)

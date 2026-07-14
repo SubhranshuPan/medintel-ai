@@ -5,6 +5,44 @@
 
 ---
 
+## 2026-07-14 — Docs drift fix + ADR-014 (schema validation decision)
+
+**Agent:** Claude (Sonnet 5, Cowork)
+**Branch:** `develop`
+**Did:**
+- Morning briefing flagged root `CLAUDE.md` and `.ai/_CLAUDE.md` as stale
+  (both still said Sprint 1 "has NOT started"). Corrected both to reflect
+  reality: Sprint 1 complete (11/11 issues, closed 2026-07-12), Sprint 2
+  (Patient Data Platform) in progress with #30–#32 shipped, #33/#34 next.
+  ADR count references bumped 12/13 → 14.
+- Wrote **ADR-014** (`docs/architecture/adr/ADR-014-schema-validation.md`),
+  resolving the "pandera vs. great-expectations" open item flagged in
+  `02_TRD.md` §3 and in the Sprint 2 kickoff playbook. Decision: **pandera**
+  — runs in-process against the pandas `DataFrame` already parsed in
+  `DatasetService.create_from_upload`, serialises failures straight into the
+  existing `validation_report` JSONB column (`app/models/dataset.py`), and
+  needs no separate store/checkpoint scaffolding the way great-expectations
+  would. Updated `02_TRD.md`'s stack table to point at the decision instead
+  of listing it as undecided.
+- Did NOT delete the four stale merged branches (`feat/30-dataset-models`,
+  `feat/31-audit-logs`, `feat/32-csv-upload`, `fix/object-store-path-traversal`)
+  flagged in the same briefing — this sandbox has no GitHub push
+  credentials, so branch deletion needs to happen from Som's own terminal.
+
+**Decisions made:**
+- ADR-014 accepted: pandera is the schema/data-validation library for the
+  Patient Data Platform, unblocking #33. See `project-memory.md` and the ADR
+  itself for full rationale.
+
+**Next up:**
+- Implement #33 (schema validation) against the two-tier design in ADR-014.
+- Delete the four stale remote branches from a terminal with push access:
+  `git push origin --delete feat/30-dataset-models feat/31-audit-logs feat/32-csv-upload fix/object-store-path-traversal`
+
+**Refs:** ADR-014, #33, #34, `02_TRD.md` §3
+
+---
+
 ## 2026-07-13 — #32 CI failure + path-traversal hardening (post-merge)
 
 **Agent:** Claude (Sonnet 5, Claude Code)

@@ -25,13 +25,13 @@ Don't propose a different stack for core pillars without flagging it as an ADR-w
 - Use healthcare-domain terminology (readmission risk, clinical pathway, patient cohort, ICD codes) — not generic tech jargon.
 - Treat all data as if it were real PHI even though it's synthetic: GDPR-aware handling, no shortcuts that wouldn't fly with real patient data.
 - Explainability is not optional — any predictive model needs SHAP output, since that's what NHS/UK regulators and interviewers care about.
-- Code, docs, and commits should read as senior-engineer output — recruiter-readable, interview-defensible. Document non-trivial decisions as ADRs (13 exist already in `docs/architecture/adr/`).
+- Code, docs, and commits should read as senior-engineer output — recruiter-readable, interview-defensible. Document non-trivial decisions as ADRs (14 exist already in `docs/architecture/adr/`).
 - Don't dumb the project down or default to tutorial-tier patterns.
 
 ## Workflow & Branch Policy
 - All work stays on `develop`. Do not propose or perform a `develop` → `main` merge — `main` updates only once a basic first-draft product exists. Don't flag "main is behind develop" as an action item.
 - Report-only autonomy: propose changes, let Som approve; never auto-merge PRs.
-- Project status: Sprint 0 (docs/architecture/12 ADRs) is complete. Sprint 1 (backend foundation — auth, data models, API skeleton, issues #5–#10) is next but has NOT started (`backend/`, `frontend/`, `ml/` are still empty scaffolding). Per the Model Routing table below, Sprint 1 needs an Opus `/plan` pass before Sonnet execution begins.
+- Project status: Sprint 0 (docs/architecture, 12 ADRs) is complete. Sprint 1 (backend foundation — auth, data models, API skeleton, issues #5–#10) is complete — 11/11 issues, milestone closed 2026-07-12. Sprint 2 (Patient Data Platform — dataset models, audit logging, CSV upload/object storage, issues #30–#32) is in progress; #33/#34 (schema validation, dataset management endpoints) are next.
 
 ## Session-End Checklist (mandatory — Cowork and Claude Code, do this without being asked)
 - If any file changed this session (code, config, docs, ADRs): append a dated entry to `.ai/memory/session-history.md`, using the template already at the top of that file. Do this automatically at the end of the session, before signing off — don't wait for Som to request it.

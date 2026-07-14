@@ -41,8 +41,9 @@
   only; Zustand, RHF/Zod, Recharts, shadcn/ui, TanStack Query deferred until a
   feature screen needs them. `tsconfig.json` uses `noEmit` + `tsc --noEmit` in the
   build script (no project references); ESLint deferred (tsc covers a scaffold).
-- **Data validation = `pandera`** (2026-07-13, Sprint 2 planning; ADR-014 to be
-  written in #33): resolves the TRD's open `pandera`/`great-expectations` choice.
+- **Data validation = `pandera`** (2026-07-13, Sprint 2 planning; written up as
+  ADR-014 on 2026-07-14, ahead of #33): resolves the TRD's open
+  `pandera`/`great-expectations` choice.
   Schema-as-code in Python, native pandas, structured failure report persisted to
   the `validation_report` JSONB column, no extra infra. great-expectations rejected
   — its Data Context / expectation suites / Data Docs are a second config surface

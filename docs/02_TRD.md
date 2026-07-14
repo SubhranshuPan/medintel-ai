@@ -76,7 +76,7 @@ Architecture style: **Modular Monolith** (ADR-008). New pillars are new modules 
 | Backend | FastAPI, Python 3.12+, SQLAlchemy 2.0, Pydantic v2, Alembic, JWT/OAuth2 |
 | AI/LLM | LangChain + LangGraph, multi-provider (OpenAI/Anthropic/Gemini), Qdrant, RAG |
 | ML | scikit-learn, XGBoost, SHAP, MLflow (ADR-010, ADR-011) |
-| Data Platform | pandas, schema-validation library (pandera/great-expectations), PostgreSQL + object storage (ADR-009) |
+| Data Platform | pandas, pandera for schema/data validation (ADR-014), PostgreSQL + object storage (ADR-009) |
 | Reporting | WeasyPrint, Jinja2, pandas/openpyxl (ADR-012) |
 | Background Jobs | Celery + Redis (ADR-010) |
 | Databases | PostgreSQL, Qdrant |

@@ -5,6 +5,64 @@
 
 ---
 
+## 2026-07-15 — Sprint 2 #33 (dataset validation): PR #44 merged
+
+**Agent:** Claude (Sonnet 5, Claude Code)
+**Branch:** `feat/33-adr-014-validation` → merged to `develop`
+**Did:**
+- Resumed from a saved cross-day session file (`~/.claude/session-data/2026-07-13-sprint-2-session.tmp`,
+  written via the `save-session` skill at the end of the 2026-07-13 session) —
+  confirmed `develop` still matched the saved state before continuing.
+- Discovered ADR-014 (`docs/architecture/adr/ADR-014-schema-validation.md`) and
+  the TRD update were **already merged** from the 2026-07-14 vision-doc rewrite,
+  ahead of this issue's implementation. The ADR's decision (generic frame-level
+  checks: non-empty, no fully-null column, no duplicate rows/column names) is
+  narrower than both `.claude/current_plan.md`'s original fixed cohort schema
+  (`patient_id`/`age`/`sex`/`icd_code`) and issue #33's own DoD wording (named
+  clinical schema, ICD-code shape, value ranges). Implemented against the ADR —
+  the authoritative, already-merged decision — and flagged the discrepancy
+  explicitly in the PR description rather than silently picking one.
+- Added `app/services/validation.py` (pandera `DataFrameSchema`, `lazy=True`),
+  wired it into `DatasetService.create_from_upload` (dispatched via
+  `asyncio.to_thread` — CPU-bound sync work off the event loop), and added
+  `DatasetService.revalidate_latest` + `POST /datasets/{id}/validate`.
+- **Code review caught a real cross-tenant PHI leak before merge**: the new
+  `/validate` endpoint had no ownership check, so any authenticated user could
+  revalidate and read back another user's `validation_report` — which can
+  carry raw row values via pandera's `failure_cases` — by guessing a dataset
+  id. Fixed: owner-or-admin only, 403 otherwise (`DatasetForbiddenError`).
+  Covered by `test_revalidate_non_owner_is_forbidden`.
+- **`gh pr create` bug**: opened [PR #44](https://github.com/SubhranshuPan/medintel-ai/pull/44)
+  without an explicit `--base`, which silently targeted the repo's *default*
+  branch (`main`) instead of `develop` — violating the never-merge-to-main
+  rule and silently skipping CI (the workflow only triggers on PRs against
+  `develop`). Caught by checking `gh pr checks`/`gh run list` and noticing
+  **zero** CI runs existed for the branch. Fixed with `gh pr edit 44 --base
+  develop`, then `gh pr close`/`gh pr reopen` to force a fresh `pull_request`
+  event (changing the base via the API alone doesn't trigger the workflow —
+  only `opened`/`synchronize`/`reopened` do, and base-retarget is `edited`).
+  CI went green afterward. **Always pass `--base develop` explicitly on every
+  `gh pr create` in this repo** — logged as a gotcha in `project-memory.md`.
+- Merged manually by Som; local `develop` synced, `feat/33-adr-014-validation`
+  deleted locally and on GitHub.
+
+**Decisions made:**
+- **Docs win over a stale plan when they conflict** (project-memory's own
+  existing rule, applied concretely here): `.claude/current_plan.md` was
+  written 2026-07-13, before the 2026-07-14 vision-doc rewrite pre-wrote
+  ADR-014 with a narrower scope. Implementation followed the merged ADR, not
+  the plan text or the issue body.
+- **Ownership checks belong in the service layer, not the router** — same
+  layering already used elsewhere (`revalidate_latest` takes `requester: User`
+  and raises `DatasetForbiddenError`), pre-empting the pattern issue #35 will
+  need for its own owner-only delete check.
+
+**Next up:** #34 (cleaning/preprocessing pipeline → new `DatasetVersion`), per
+`.claude/current_plan.md`'s build order. Not started — proceeds only on
+Som's explicit go-ahead, same as every issue this sprint.
+
+---
+
 ## 2026-07-14 — Full-scope docs shipped: PR #41 merged, released as v0.2.0
 
 **Agent:** Claude (Opus 4.8, Claude Code)

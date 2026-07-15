@@ -1,6 +1,7 @@
 """Dataset upload endpoint (ADR-009). Patient-data path — audited (#31)."""
 
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,7 +11,13 @@ from app.core.config import get_settings
 from app.core.db import get_db
 from app.repositories.dataset import DatasetRepository, DatasetVersionRepository
 from app.schemas.dataset import DatasetRead, DatasetVersionRead
-from app.services.dataset import DatasetService, InvalidCsvError, UploadTooLargeError
+from app.services.dataset import (
+    DatasetForbiddenError,
+    DatasetNotFoundError,
+    DatasetService,
+    InvalidCsvError,
+    UploadTooLargeError,
+)
 from app.storage.object_store import ObjectStore
 
 router = APIRouter(prefix="/datasets", tags=["datasets"])
@@ -87,3 +94,32 @@ async def upload_dataset(
         created_at=dataset.created_at,
         latest_version=DatasetVersionRead.model_validate(version),
     )
+
+
+@router.post("/{dataset_id}/validate", response_model=DatasetVersionRead)
+async def revalidate_dataset(
+    dataset_id: UUID,
+    request: Request,
+    current_user: CurrentUser,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    store: Annotated[ObjectStore, Depends(get_object_store)],
+) -> DatasetVersionRead:
+    """Re-run validation against the dataset's latest version (TRD §12, ADR-014)."""
+    try:
+        version = await _service(db, store).revalidate_latest(
+            dataset_id, requester=current_user
+        )
+    except DatasetNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Dataset not found"
+        ) from None
+    except DatasetForbiddenError:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not permitted to validate this dataset",
+        ) from None
+
+    request.state.audit_resource_id = str(dataset_id)
+    request.state.audit_detail = {"validation_status": version.validation_status.value}
+
+    return DatasetVersionRead.model_validate(version)

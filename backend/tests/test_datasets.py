@@ -132,7 +132,7 @@ def test_upload_creates_dataset_and_v1(client: TestClient, tmp_path) -> None:
     body = resp.json()
     assert body["latest_version"]["version_number"] == 1
     assert body["latest_version"]["row_count"] == 2
-    assert body["latest_version"]["validation_status"] == "pending"
+    assert body["latest_version"]["validation_status"] == "passed"
 
 
 def test_upload_requires_auth(client: TestClient, tmp_path) -> None:
@@ -187,3 +187,67 @@ def test_upload_is_audited(
     rows = [r for r in audit_rows() if r.status_code == 201]
     assert len(rows) == 1
     assert rows[0].resource_id == dataset_id
+
+
+def test_upload_with_duplicate_rows_is_stored_and_marked_failed(
+    client: TestClient, tmp_path
+) -> None:
+    _override_store(client, tmp_path)
+    token = _register_and_login(client, "invalid@nhs.uk")
+
+    resp = _upload(client, token, content=b"patient_id,age\np1,40\np1,40\n")
+
+    # ADR-009: a failed validation never rejects the upload.
+    assert resp.status_code == 201
+    body = resp.json()["latest_version"]
+    assert body["validation_status"] == "failed"
+    assert body["validation_report"]["failure_count"] > 0
+
+
+def test_revalidate_returns_current_verdict(client: TestClient, tmp_path) -> None:
+    _override_store(client, tmp_path)
+    token = _register_and_login(client, "reval@nhs.uk")
+    dataset_id = _upload(client, token).json()["id"]
+
+    resp = client.post(
+        f"/api/v1/datasets/{dataset_id}/validate", headers={"Authorization": f"Bearer {token}"}
+    )
+
+    assert resp.status_code == 200
+    assert resp.json()["validation_status"] == "passed"
+
+
+def test_revalidate_requires_auth(client: TestClient, tmp_path) -> None:
+    _override_store(client, tmp_path)
+    token = _register_and_login(client, "reval2@nhs.uk")
+    dataset_id = _upload(client, token).json()["id"]
+
+    resp = client.post(f"/api/v1/datasets/{dataset_id}/validate")
+
+    assert resp.status_code == 401
+
+
+def test_revalidate_non_owner_is_forbidden(client: TestClient, tmp_path) -> None:
+    _override_store(client, tmp_path)
+    owner_token = _register_and_login(client, "owner-reval@nhs.uk")
+    dataset_id = _upload(client, owner_token).json()["id"]
+    stranger_token = _register_and_login(client, "stranger-reval@nhs.uk")
+
+    resp = client.post(
+        f"/api/v1/datasets/{dataset_id}/validate",
+        headers={"Authorization": f"Bearer {stranger_token}"},
+    )
+
+    assert resp.status_code == 403
+
+
+def test_revalidate_unknown_dataset_404s(client: TestClient, tmp_path) -> None:
+    _override_store(client, tmp_path)
+    token = _register_and_login(client, "reval3@nhs.uk")
+
+    resp = client.post(
+        "/api/v1/datasets/00000000-0000-0000-0000-000000000000/validate",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert resp.status_code == 404

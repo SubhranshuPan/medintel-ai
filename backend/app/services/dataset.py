@@ -1,13 +1,16 @@
 """Dataset upload use-case: immutable artifact storage + v1 metadata (ADR-009)."""
 
+import asyncio
 import io
+from uuid import UUID
 
 import pandas as pd
 
 from app.core.config import Settings
 from app.models.dataset import Dataset, DatasetVersion, ValidationStatus, VersionOrigin
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.repositories.dataset import DatasetRepository, DatasetVersionRepository
+from app.services.validation import validate
 from app.storage.object_store import ObjectStore, sha256_hex
 
 
@@ -21,6 +24,14 @@ class InvalidCsvError(DatasetError):
 
 class UploadTooLargeError(DatasetError):
     """The uploaded content exceeds the configured size cap."""
+
+
+class DatasetNotFoundError(DatasetError):
+    """No live dataset with this id."""
+
+
+class DatasetForbiddenError(DatasetError):
+    """The requester is neither the dataset's owner nor an admin."""
 
 
 class DatasetService:
@@ -65,6 +76,8 @@ class DatasetService:
         schema_hash = sha256_hex(
             ",".join(f"{c}:{df.dtypes[c]}" for c in df.columns).encode()
         )
+        # CPU-bound sync validation dispatched off the event loop (ADR-014).
+        passed, report = await asyncio.to_thread(validate, df)
 
         dataset = await self.datasets.add(
             Dataset(name=name, description=description, owner_id=owner.id)
@@ -81,8 +94,38 @@ class DatasetService:
                 row_count=len(df),
                 column_names=list(df.columns),
                 schema_hash=schema_hash,
-                validation_status=ValidationStatus.pending,
+                validation_status=ValidationStatus.passed if passed else ValidationStatus.failed,
+                validation_report=report,
                 created_by_id=owner.id,
             )
         )
         return dataset, version
+
+    async def revalidate_latest(self, dataset_id: UUID, *, requester: User) -> DatasetVersion:
+        """Re-run validation against the latest version's stored bytes.
+
+        The single sanctioned mutation of a persisted ``DatasetVersion``: it
+        updates only the validation verdict, never the stored artifact or any
+        other field (ADR-009 immutability applies to everything else).
+
+        Owner-or-admin only: the response echoes ``validation_report``, which
+        can carry raw row values (pandera's ``failure_cases``) from the
+        dataset's own data — patient-level content per TRD §9, so a stranger
+        must not be able to pull it via another user's dataset id.
+        """
+        dataset = await self.datasets.get_active(dataset_id)
+        if dataset is None:
+            raise DatasetNotFoundError(dataset_id)
+        if dataset.owner_id != requester.id and requester.role != UserRole.admin:
+            raise DatasetForbiddenError(dataset_id)
+
+        versions = await self.versions.list_for_dataset(dataset_id)
+        latest = versions[-1]
+
+        content = self.store.get(latest.storage_uri)
+        df = pd.read_csv(io.BytesIO(content))
+        passed, report = await asyncio.to_thread(validate, df)
+
+        latest.validation_status = ValidationStatus.passed if passed else ValidationStatus.failed
+        latest.validation_report = report
+        return await self.versions.add(latest)

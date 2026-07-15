@@ -144,6 +144,30 @@
   fix**, don't assume the working tree matches what's committed. Fix: anchor
   gitignore patterns meant for a specific path with a leading slash
   (`/storage/` matches only `backend/storage/`, not `backend/app/storage/`).
+- **`gh pr create` without `--base` targets the repo's *default* branch, not
+  `develop` (2026-07-15, PR #44):** this repo's default branch is `main`.
+  Omitting `--base` on `gh pr create` silently opened a PR against `main` —
+  breaking the never-merge-to-main rule and also silently skipping CI (the
+  workflow's `pull_request` trigger only matches `branches: [develop]`, so
+  zero runs were queued and nothing looked broken until `gh run list` came
+  back empty). Fixed with `gh pr edit <n> --base develop`, but that alone
+  doesn't trigger CI — retargeting the base fires an `edited` event, and the
+  workflow only listens for the default `opened`/`synchronize`/`reopened`
+  set. Had to `gh pr close` + `gh pr reopen` to force a fresh `pull_request`
+  event. **Always pass `--base develop` explicitly on every `gh pr create` in
+  this repo** — don't rely on the CLI's default.
+- **Any endpoint returning patient-data-derived content needs an ownership
+  check, not just authentication (2026-07-15, #33 code review):** `POST
+  /datasets/{id}/validate` required a valid bearer token but never checked
+  the token's owner against the dataset's `owner_id`, so any authenticated
+  user could pull another user's `validation_report` — which can contain raw
+  row values via pandera's `failure_cases` — by guessing/enumerating a
+  dataset id. Caught in code review before merge, not by a test written in
+  advance. Fixed at the service layer (`revalidate_latest(..., requester:
+  User)` raises a dedicated `DatasetForbiddenError` → 403), establishing the
+  pattern #35 will need for its own owner-only delete check. **"requires
+  auth" and "requires *this* user's authorization" are different checks —
+  audit for both on every new patient-data endpoint, not just the first.**
 
 ---
 

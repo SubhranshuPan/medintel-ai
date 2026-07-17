@@ -5,6 +5,40 @@
 
 ---
 
+## 2026-07-17 — Interview-prep walkthrough (Sprint 0–2) written
+
+**Agent:** Claude (Sonnet 5, Cowork)
+**Branch:** `develop` (working tree only, nothing committed)
+**Did:**
+- Ran the morning repo briefing (no activity since 2026-07-15, nothing to log
+  at that point).
+- Som asked for a full, accurate, step-by-step walkthrough of everything
+  built so far (Sprint 0 docs/ADRs, Sprint 1 backend foundation, Sprint 2
+  #30–#33) for interview prep — what was built, why, and the tech's role.
+  Read all 19 ADRs, the full Sprint 1/2 backend source (auth, models, audit
+  middleware, object storage, dataset service, pandera validation, CI/Docker),
+  and `project-memory.md`/`session-history.md` for the real bug/decision
+  narratives, then wrote `.ai/interview-prep/sprint-0-to-2-walkthrough.md`.
+- **Flagged a real doc-quality gap while reading the ADRs**: ADR-001–008
+  (the core stack ADRs) have generic, copy-pasted "Consequences" sections —
+  e.g. ADR-002 (React) lists "Automatic OpenAPI generation" as a consequence,
+  which is nonsensical for a frontend framework. ADR-009 onward are genuinely
+  detailed. Surfaced this to Som in the walkthrough doc rather than silently
+  ignoring it, since it conflicts with the project's "recruiter-readable"
+  bar; offered to rewrite 001–008 on request.
+
+**Decisions made:**
+- None new — this session is research/writing, not architecture.
+
+**Next up:**
+- Rewrite ADR-001–008 "Consequences" sections with real trade-offs, if Som
+  wants it prioritized.
+- Sprint 2 #34 (cleaning pipeline) is next in the build order — not started.
+
+**Refs:** `.ai/interview-prep/sprint-0-to-2-walkthrough.md` (new, uncommitted)
+
+---
+
 ## 2026-07-15 — Sprint 2 #33 (dataset validation): PR #44 merged
 
 **Agent:** Claude (Sonnet 5, Claude Code)

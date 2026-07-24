@@ -123,3 +123,32 @@ async def revalidate_dataset(
     request.state.audit_detail = {"validation_status": version.validation_status.value}
 
     return DatasetVersionRead.model_validate(version)
+
+
+@router.post(
+    "/{dataset_id}/clean", response_model=DatasetVersionRead, status_code=status.HTTP_201_CREATED
+)
+async def clean_dataset(
+    dataset_id: UUID,
+    request: Request,
+    current_user: CurrentUser,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    store: Annotated[ObjectStore, Depends(get_object_store)],
+) -> DatasetVersionRead:
+    """Derive a new cleaned version from the dataset's latest version (ADR-009, #34)."""
+    try:
+        version = await _service(db, store).clean_latest(dataset_id, requester=current_user)
+    except DatasetNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Dataset not found"
+        ) from None
+    except DatasetForbiddenError:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not permitted to clean this dataset",
+        ) from None
+
+    request.state.audit_resource_id = str(dataset_id)
+    request.state.audit_detail = {"origin": "cleaned", "version_number": version.version_number}
+
+    return DatasetVersionRead.model_validate(version)

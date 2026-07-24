@@ -2,8 +2,10 @@
 
 import asyncio
 from collections.abc import Callable
+from uuid import UUID
 
 from fastapi.testclient import TestClient
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
@@ -247,6 +249,108 @@ def test_revalidate_unknown_dataset_404s(client: TestClient, tmp_path) -> None:
 
     resp = client.post(
         "/api/v1/datasets/00000000-0000-0000-0000-000000000000/validate",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert resp.status_code == 404
+
+
+def test_clean_creates_new_version_and_preserves_parent(
+    client: TestClient, tmp_path, _engine: AsyncEngine
+) -> None:
+    _override_store(client, tmp_path)
+    token = _register_and_login(client, "clean@nhs.uk")
+    resp_upload = _upload(client, token, content=b"patient_id,age\np1,40\np1,40\n")
+    dataset_id = resp_upload.json()["id"]
+    v1 = resp_upload.json()["latest_version"]
+
+    resp = client.post(
+        f"/api/v1/datasets/{dataset_id}/clean", headers={"Authorization": f"Bearer {token}"}
+    )
+
+    assert resp.status_code == 201
+    v2 = resp.json()
+    assert v2["version_number"] == 2
+    assert v2["parent_version_id"] == v1["id"]
+    assert v2["origin"] == "cleaned"
+
+    # GET /versions doesn't exist until #35 — read the parent row back directly
+    # to prove ADR-009 immutability: v1's bytes/checksum/row_count untouched.
+    factory = async_sessionmaker(_engine, class_=AsyncSession, expire_on_commit=False)
+
+    async def _get_v1() -> DatasetVersion:
+        async with factory() as session:
+            result = await session.execute(
+                select(DatasetVersion).where(DatasetVersion.id == UUID(v1["id"]))
+            )
+            return result.scalar_one()
+
+    stored_v1 = asyncio.run(_get_v1())
+    assert stored_v1.checksum == v1["checksum"]
+    assert stored_v1.row_count == v1["row_count"]
+
+
+def test_clean_can_flip_a_failed_upload_to_passed(client: TestClient, tmp_path) -> None:
+    _override_store(client, tmp_path)
+    token = _register_and_login(client, "cleanflip@nhs.uk")
+    # Duplicate rows fail GENERIC_SCHEMA (#33); cleaning removes the duplicate.
+    v1 = _upload(client, token, content=b"patient_id,age\np1,40\np1,40\n").json()
+    dataset_id = v1["id"]
+    assert v1["latest_version"]["validation_status"] == "failed"
+
+    resp = client.post(
+        f"/api/v1/datasets/{dataset_id}/clean", headers={"Authorization": f"Bearer {token}"}
+    )
+
+    assert resp.json()["validation_status"] == "passed"
+
+
+def test_clean_records_transformation(client: TestClient, tmp_path) -> None:
+    _override_store(client, tmp_path)
+    token = _register_and_login(client, "cleantx@nhs.uk")
+    dataset_id = _upload(
+        client, token, content=b"patient_id,age\np1,40\np1,40\n"
+    ).json()["id"]
+
+    resp = client.post(
+        f"/api/v1/datasets/{dataset_id}/clean", headers={"Authorization": f"Bearer {token}"}
+    )
+
+    transformation = resp.json()["transformation"]
+    assert transformation["rows_before"] > transformation["rows_after"]
+    assert "drop_duplicate_rows" in transformation["steps"]
+
+
+def test_clean_requires_auth(client: TestClient, tmp_path) -> None:
+    _override_store(client, tmp_path)
+    token = _register_and_login(client, "cleanauth@nhs.uk")
+    dataset_id = _upload(client, token).json()["id"]
+
+    resp = client.post(f"/api/v1/datasets/{dataset_id}/clean")
+
+    assert resp.status_code == 401
+
+
+def test_clean_non_owner_is_forbidden(client: TestClient, tmp_path) -> None:
+    _override_store(client, tmp_path)
+    owner_token = _register_and_login(client, "owner-clean@nhs.uk")
+    dataset_id = _upload(client, owner_token).json()["id"]
+    stranger_token = _register_and_login(client, "stranger-clean@nhs.uk")
+
+    resp = client.post(
+        f"/api/v1/datasets/{dataset_id}/clean",
+        headers={"Authorization": f"Bearer {stranger_token}"},
+    )
+
+    assert resp.status_code == 403
+
+
+def test_clean_unknown_dataset_404s(client: TestClient, tmp_path) -> None:
+    _override_store(client, tmp_path)
+    token = _register_and_login(client, "clean404@nhs.uk")
+
+    resp = client.post(
+        "/api/v1/datasets/00000000-0000-0000-0000-000000000000/clean",
         headers={"Authorization": f"Bearer {token}"},
     )
 

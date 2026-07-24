@@ -25,6 +25,12 @@ RUN groupadd --system app && useradd --system --gid app --home-dir /app app
 WORKDIR /app
 COPY --from=builder --chown=app:app /app /app
 
+# Pre-create the storage mount point owned by `app`: docker-compose mounts a
+# named volume here, and Docker seeds a new named volume's ownership from
+# whatever already exists at that path in the image — without this, the
+# volume is created root-owned and the non-root `app` user can't write to it.
+RUN mkdir -p /app/storage/datasets && chown -R app:app /app/storage
+
 # Put the venv on PATH so `uvicorn`/`alembic` resolve without `uv run`.
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONUNBUFFERED=1

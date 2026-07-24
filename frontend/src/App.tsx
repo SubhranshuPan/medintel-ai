@@ -2,6 +2,8 @@ import { Navigate, Route, Routes } from "react-router-dom";
 
 import { AppLayout } from "./components/AppLayout";
 import { DashboardPage } from "./pages/DashboardPage";
+import { DatasetsPage } from "./pages/DatasetsPage";
+import { LoginPage } from "./pages/LoginPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 import { PatientsPage } from "./pages/PatientsPage";
 
@@ -9,10 +11,12 @@ import { PatientsPage } from "./pages/PatientsPage";
 export default function App() {
   return (
     <Routes>
+      <Route path="login" element={<LoginPage />} />
       <Route element={<AppLayout />}>
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="patients" element={<PatientsPage />} />
+        <Route path="datasets" element={<DatasetsPage />} />
       </Route>
       <Route path="*" element={<NotFoundPage />} />
     </Routes>

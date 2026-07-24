@@ -30,7 +30,8 @@ class Settings(BaseSettings):
     app_name: str = "MedIntel AI"
     environment: str = "development"
     version: str = "0.1.0"
-    cors_origins: list[str] = ["http://localhost:3000"]
+    # Vite's dev server (frontend/vite.config.ts) — not CRA's port 3000.
+    cors_origins: list[str] = ["http://localhost:5173"]
 
     # Async SQLAlchemy URL (asyncpg driver). Override per environment.
     database_url: str = "postgresql+asyncpg://medintel:medintel@localhost:5432/medintel"

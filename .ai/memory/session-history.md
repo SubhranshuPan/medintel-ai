@@ -5,6 +5,41 @@
 
 ---
 
+## 2026-07-24 — Sprint 2 #34 (cleaning pipeline): PR #49 merged
+
+**Agent:** Claude Code (Sonnet 5)
+**Branch:** `feat/34-cleaning-pipeline` → merged to `develop` via PR #49
+**Did:**
+- Implemented `POST /datasets/{id}/clean` (ADR-009): derives a new
+  `DatasetVersion` from the dataset's latest version via a deterministic
+  cleaning pass (drop empty rows, strip whitespace, drop duplicate rows);
+  parent version's bytes/row untouched. Child records `parent_version_id`,
+  `origin=cleaned`, and a `transformation` report. Re-validates the cleaned
+  frame and stamps the new version.
+- `DatasetService.clean_latest` — owner-or-admin gated, same pattern as
+  #33's `revalidate_latest`.
+- Self-reviewed the diff inline (no agent swarm, cost-conscious) instead of
+  the full 8-angle code-review skill; caught and fixed one test-coverage gap
+  (failed→passed flip wasn't asserted) before opening the PR.
+- Closed #34, synced epic #29 (child checklist, DoD, progress line).
+
+**Decisions made:**
+- Cleaning steps are generic (empty rows / whitespace / duplicate rows),
+  not the plan's cohort-specific ones (`normalize_sex`, coerce `age`) —
+  `validate()` from #33 is already generic with no fixed-column schema to
+  clean against, so this follows that precedent instead of the plan. Flagged
+  in the PR, not silently resolved (same pattern as #33).
+- No imputation — inventing patient values is a clinical-safety line this
+  step doesn't cross (explicit in the module docstring).
+
+**Next up:**
+- #35 (dataset management endpoints — list/view/versions/delete) is next in
+  build order. Not started — gated on Som's go-ahead per standing practice.
+
+**Refs:** PR #49, issue #34 (closed), epic #29
+
+---
+
 ## 2026-07-24 — ADR-001-008 PR shipped + merged; session-history landing
 
 **Agent:** OpenCode (deepseek-v4-flash-free)

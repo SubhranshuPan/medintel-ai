@@ -5,6 +5,68 @@
 
 ---
 
+## 2026-07-24 — Sprint 2 #36 (frontend datasets UI): PR #53 merged — epic #29 scope complete
+
+**Agent:** Claude Code (Sonnet 5)
+**Branch:** `feat/36-frontend-datasets` → merged to `develop` via PR #53
+**Did:**
+- `DatasetsPage`: upload form (client-side `.csv`/50MB guard), dataset list,
+  click-to-expand version history, validation failures rendered as readable
+  sentences (raw-JSON `<details>` fallback for anything unmapped). Status
+  badges are text+color, not color-only.
+- `api.ts`: token in `localStorage` + `Authorization` header, `FormData`-safe
+  `Content-Type` (was hardcoded to `application/json`, breaking multipart),
+  `ApiError.detail` from FastAPI's error body, typed dataset client functions.
+- Added `LoginPage` — not in the original plan. No login screen exists
+  anywhere in the app (#10 scoped the scaffold to a health-check placeholder
+  only); #36's own DoD ("auth token attached", "works end-to-end") is
+  impossible without one. Flagged as the minimum enabler in the PR, not
+  scope creep. Registration stays out of scope.
+- Frontend CI job added (`setup-node` → `npm ci` → `npm run build`) — CI was
+  backend-only until now, carried-forward backlog item from #10.
+- Used `ui-ux-pro-max`'s UX checklist (forms/feedback + accessibility
+  domains) as a review pass rather than generating a new design system —
+  reused the existing teal/slate visual language from #10.
+- Self-reviewed inline before commit (no agent swarm): caught and fixed two
+  real bugs — `event.currentTarget` reads `null` after an `await` in the
+  upload handler (native DOM behavior, not React pooling — fixed by
+  capturing the form ref synchronously), and the datasets-list effect fired
+  an unauthenticated fetch (wasted 401, discarded error) before the
+  login-gate check ran (fixed by guarding the effect on `getToken()`).
+- Docker Desktop came up mid-session; ran a real `docker compose up` + Chrome
+  pass to verify E2E, which surfaced two **pre-existing** infra bugs (not
+  from this PR) blocking upload/login entirely: `cors_origins` defaulted to
+  `http://localhost:3000` (stale Sprint 1/CRA assumption — frontend has been
+  Vite on 5173 since #10), and the api container's non-root user couldn't
+  write to the `datasets` named volume (Docker creates a new named volume
+  root-owned unless the mount path already has the right ownership in the
+  image). Fixed both (`backend/app/core/config.py`, `backend/Dockerfile`) in
+  a follow-up commit on the same PR, since #36's own DoD literally requires
+  E2E to work. Confirmed after the fix: register → login → upload a CSV with
+  a duplicate row → v1 shows `failed` with the readable reason "duplicate
+  rows present" → version history expands correctly.
+- Closed #36, synced epic #29 (all children ticked, all DoD items ticked,
+  progress line) — **epic #29 scope is now fully complete**, flagged in the
+  epic body as ready for Som to close (closing the epic itself is Som's
+  call, not part of the routine child-sync).
+
+**Decisions made:**
+- `LoginPage` added as necessary infrastructure, explicitly flagged rather
+  than silently expanding scope.
+- The two infra bugs (CORS default port, storage volume ownership) were
+  fixed rather than just reported, because they were the literal blocker for
+  #36's own Definition of Done — but flagged clearly as pre-existing (#9/#32)
+  in the PR, not silently folded in as if part of the planned frontend work.
+
+**Next up:**
+- Epic #29 (Sprint 2 — Patient Data Platform) is complete. Next epic/sprint
+  scope not yet defined this session — awaiting Som's direction (Sprint 3 is
+  the ML risk-prediction engine per the vision doc's pillar order).
+
+**Refs:** PR #53, issue #36 (closed), epic #29
+
+---
+
 ## 2026-07-24 — Sprint 2 #35 (dataset management endpoints): PR #51 merged
 
 **Agent:** Claude Code (Sonnet 5)

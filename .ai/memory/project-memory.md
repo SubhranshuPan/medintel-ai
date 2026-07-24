@@ -168,6 +168,26 @@
   pattern #35 will need for its own owner-only delete check. **"requires
   auth" and "requires *this* user's authorization" are different checks —
   audit for both on every new patient-data endpoint, not just the first.**
+- **CORS default targeted the wrong dev port (2026-07-24, #36):**
+  `cors_origins` defaulted to `http://localhost:3000` — a Sprint 1/CRA-era
+  assumption that outlived it; the frontend has been Vite on port 5173 since
+  #10. Every browser request was silently blocked, and the failure mode is
+  misleading: a CORS-blocked `fetch()` rejects with a plain `TypeError`
+  *before* the response body is readable, so the app's own `ApiError`
+  handling never even sees it — it just looks like a generic, detail-less
+  failure. If a frontend error is suspiciously generic (no `ApiError.detail`)
+  and the backend logs show the request actually succeeded, check CORS
+  first, not the error-handling code.
+- **Non-root container + fresh named volume = root-owned mount
+  (2026-07-24, #36):** the api image runs as a non-root `app` user, but the
+  `datasets` docker-compose named volume mounted at `/app/storage` was
+  created root-owned on first use, so the app user couldn't write to it
+  (`PermissionError` on upload, surfaced as a 503). Docker seeds a *new*
+  named volume's ownership from whatever already exists at that path in the
+  image — nothing existed there, so it defaulted to root. Fix: pre-create the
+  mount path with the right ownership in the Dockerfile *before* it's used as
+  a mount point. An already-created volume won't retroactively reseed —
+  `docker volume rm` it once after the Dockerfile fix.
 
 ---
 

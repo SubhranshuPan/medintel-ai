@@ -2,6 +2,7 @@
 
 import asyncio
 import io
+from datetime import UTC, datetime
 from uuid import UUID
 
 import pandas as pd
@@ -33,6 +34,17 @@ class DatasetNotFoundError(DatasetError):
 
 class DatasetForbiddenError(DatasetError):
     """The requester is neither the dataset's owner nor an admin."""
+
+
+def _check_access(dataset: Dataset, requester: User) -> None:
+    """Owner-or-admin gate shared by every per-dataset use-case.
+
+    Dataset detail/versions can carry patient-level content (validation
+    reports, column names) — a stranger must not reach another user's
+    dataset by id (see #33's PHI-leak finding).
+    """
+    if dataset.owner_id != requester.id and requester.role != UserRole.admin:
+        raise DatasetForbiddenError(dataset.id)
 
 
 class DatasetService:
@@ -117,8 +129,7 @@ class DatasetService:
         dataset = await self.datasets.get_active(dataset_id)
         if dataset is None:
             raise DatasetNotFoundError(dataset_id)
-        if dataset.owner_id != requester.id and requester.role != UserRole.admin:
-            raise DatasetForbiddenError(dataset_id)
+        _check_access(dataset, requester)
 
         versions = await self.versions.list_for_dataset(dataset_id)
         latest = versions[-1]
@@ -145,8 +156,7 @@ class DatasetService:
         dataset = await self.datasets.get_active(dataset_id)
         if dataset is None:
             raise DatasetNotFoundError(dataset_id)
-        if dataset.owner_id != requester.id and requester.role != UserRole.admin:
-            raise DatasetForbiddenError(dataset_id)
+        _check_access(dataset, requester)
 
         versions = await self.versions.list_for_dataset(dataset_id)
         parent = versions[-1]
@@ -182,3 +192,55 @@ class DatasetService:
             created_by_id=requester.id,
         )
         return await self.versions.add(child)
+
+    async def list_for_owner(
+        self, *, requester: User, limit: int = 50, offset: int = 0
+    ) -> list[tuple[Dataset, DatasetVersion | None]]:
+        """Live datasets the requester can see, paired with their latest version.
+
+        Non-admin: own datasets only (a clinician does not browse a peer's
+        cohorts). Admin: every live dataset.
+        """
+        # ponytail: one query per dataset for its latest version (N+1). Fine at
+        # the <=200-row page cap; batch with a window function if this list
+        # screen ever needs to scale past portfolio traffic.
+        owner_id = None if requester.role == UserRole.admin else requester.id
+        datasets = await self.datasets.list_active(owner_id=owner_id, limit=limit, offset=offset)
+        return [
+            (dataset, await self.versions.get_latest_for_dataset(dataset.id))
+            for dataset in datasets
+        ]
+
+    async def get_detail(
+        self, dataset_id: UUID, *, requester: User
+    ) -> tuple[Dataset, list[DatasetVersion]]:
+        """A single dataset plus its full version history, oldest -> newest."""
+        dataset = await self.datasets.get_active(dataset_id)
+        if dataset is None:
+            raise DatasetNotFoundError(dataset_id)
+        _check_access(dataset, requester)
+        return dataset, await self.versions.list_for_dataset(dataset_id)
+
+    async def list_versions(self, dataset_id: UUID, *, requester: User) -> list[DatasetVersion]:
+        """Version history, oldest -> newest (lineage order)."""
+        dataset = await self.datasets.get_active(dataset_id)
+        if dataset is None:
+            raise DatasetNotFoundError(dataset_id)
+        _check_access(dataset, requester)
+        return await self.versions.list_for_dataset(dataset_id)
+
+    async def soft_delete(self, dataset_id: UUID, *, requester: User) -> None:
+        """Mark a dataset erased without destroying its artifacts (ADR-009).
+
+        Hard-deleting would destroy objects referenced by audit rows and
+        (later) training runs, breaking the traceability ADR-009 exists to
+        provide. A GDPR erasure request is a separate, deliberate purge that
+        must also record itself in the audit trail — out of scope here; this
+        is the reversible, day-to-day "remove from my list" delete.
+        """
+        dataset = await self.datasets.get_active(dataset_id)
+        if dataset is None:
+            raise DatasetNotFoundError(dataset_id)
+        _check_access(dataset, requester)
+        dataset.deleted_at = datetime.now(UTC)
+        await self.datasets.add(dataset)

@@ -1,10 +1,4 @@
-"""AuditLogMiddleware: every request under an audited path prefix is recorded.
-
-Only ``POST /api/v1/datasets`` exists until #35 adds the read/delete surface,
-so a GET here 405s (path matches, method doesn't) rather than 404ing. That is
-still enough to prove prefix-based interception: the middleware audits by
-path, before routing decides whether the method is allowed.
-"""
+"""AuditLogMiddleware: every request under an audited path prefix is recorded."""
 
 from collections.abc import Callable
 
@@ -26,12 +20,12 @@ def test_unauthenticated_dataset_prefix_request_is_audited(
     client: TestClient, audit_rows: Callable[[], list[AuditLog]]
 ) -> None:
     resp = client.get("/api/v1/datasets")
-    assert resp.status_code == 405  # GET not allowed on this path — still an audited path
+    assert resp.status_code == 401
 
     rows = audit_rows()
     assert len(rows) == 1
     row = rows[0]
-    assert row.status_code == 405
+    assert row.status_code == 401
     assert row.actor_id is None
     assert row.action == "GET"
     assert row.resource_type == "dataset"
@@ -47,7 +41,7 @@ def test_authenticated_dataset_prefix_request_records_actor(
     ).json()["access_token"]
 
     resp = client.get("/api/v1/datasets", headers={"Authorization": f"Bearer {token}"})
-    assert resp.status_code == 405  # method not allowed — the actor capture is what's under test
+    assert resp.status_code == 200
 
     rows = audit_rows()
     assert len(rows) == 1

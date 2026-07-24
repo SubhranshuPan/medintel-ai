@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 from app.api.deps import get_object_store
 from app.models.audit import AuditLog
 from app.models.dataset import Dataset, DatasetVersion, ValidationStatus, VersionOrigin
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.storage.object_store import LocalObjectStore
 
 _CSV = b"patient_id,age\np1,40\np2,55\n"
@@ -351,6 +351,160 @@ def test_clean_unknown_dataset_404s(client: TestClient, tmp_path) -> None:
 
     resp = client.post(
         "/api/v1/datasets/00000000-0000-0000-0000-000000000000/clean",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert resp.status_code == 404
+
+
+def test_list_returns_only_own_datasets(client: TestClient, tmp_path) -> None:
+    _override_store(client, tmp_path)
+    owner_token = _register_and_login(client, "list-owner@nhs.uk")
+    stranger_token = _register_and_login(client, "list-stranger@nhs.uk")
+    _upload(client, owner_token, name="Mine")
+    _upload(client, stranger_token, name="Theirs")
+
+    resp = client.get("/api/v1/datasets", headers={"Authorization": f"Bearer {owner_token}"})
+
+    assert resp.status_code == 200
+    names = [d["name"] for d in resp.json()]
+    assert names == ["Mine"]
+
+
+def test_list_excludes_soft_deleted(client: TestClient, tmp_path) -> None:
+    _override_store(client, tmp_path)
+    token = _register_and_login(client, "list-del@nhs.uk")
+    dataset_id = _upload(client, token).json()["id"]
+
+    client.delete(f"/api/v1/datasets/{dataset_id}", headers={"Authorization": f"Bearer {token}"})
+    resp = client.get("/api/v1/datasets", headers={"Authorization": f"Bearer {token}"})
+
+    assert resp.json() == []
+
+
+def test_list_pagination_is_bounded(client: TestClient, tmp_path) -> None:
+    _override_store(client, tmp_path)
+    token = _register_and_login(client, "list-page@nhs.uk")
+
+    resp = client.get(
+        "/api/v1/datasets", params={"limit": 500}, headers={"Authorization": f"Bearer {token}"}
+    )
+
+    assert resp.status_code == 422
+
+
+def test_admin_sees_every_dataset(
+    client: TestClient, tmp_path, seed_user: Callable[..., User]
+) -> None:
+    _override_store(client, tmp_path)
+    owner_token = _register_and_login(client, "adminview-owner@nhs.uk")
+    _upload(client, owner_token, name="Owned")
+    seed_user("adminview-boss@nhs.uk", "s3cret-pass", UserRole.admin)
+    admin_token = client.post(
+        "/api/v1/auth/login",
+        data={"username": "adminview-boss@nhs.uk", "password": "s3cret-pass"},
+    ).json()["access_token"]
+
+    resp = client.get("/api/v1/datasets", headers={"Authorization": f"Bearer {admin_token}"})
+
+    assert any(d["name"] == "Owned" for d in resp.json())
+
+
+def test_get_dataset_returns_version_history_in_order(client: TestClient, tmp_path) -> None:
+    _override_store(client, tmp_path)
+    token = _register_and_login(client, "detail@nhs.uk")
+    dataset_id = _upload(client, token, content=b"patient_id,age\np1,40\np1,40\n").json()["id"]
+    client.post(
+        f"/api/v1/datasets/{dataset_id}/clean", headers={"Authorization": f"Bearer {token}"}
+    )
+
+    resp = client.get(
+        f"/api/v1/datasets/{dataset_id}", headers={"Authorization": f"Bearer {token}"}
+    )
+
+    assert resp.status_code == 200
+    body = resp.json()
+    assert [v["version_number"] for v in body["versions"]] == [1, 2]
+    assert body["latest_version"]["version_number"] == 2
+
+
+def test_get_dataset_non_owner_is_forbidden(client: TestClient, tmp_path) -> None:
+    _override_store(client, tmp_path)
+    owner_token = _register_and_login(client, "detail-owner@nhs.uk")
+    dataset_id = _upload(client, owner_token).json()["id"]
+    stranger_token = _register_and_login(client, "detail-stranger@nhs.uk")
+
+    resp = client.get(
+        f"/api/v1/datasets/{dataset_id}", headers={"Authorization": f"Bearer {stranger_token}"}
+    )
+
+    assert resp.status_code == 403
+
+
+def test_get_dataset_unknown_404s(client: TestClient, tmp_path) -> None:
+    _override_store(client, tmp_path)
+    token = _register_and_login(client, "detail404@nhs.uk")
+
+    resp = client.get(
+        "/api/v1/datasets/00000000-0000-0000-0000-000000000000",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert resp.status_code == 404
+
+
+def test_list_versions_endpoint_matches_detail_order(client: TestClient, tmp_path) -> None:
+    _override_store(client, tmp_path)
+    token = _register_and_login(client, "versions@nhs.uk")
+    dataset_id = _upload(client, token).json()["id"]
+
+    resp = client.get(
+        f"/api/v1/datasets/{dataset_id}/versions", headers={"Authorization": f"Bearer {token}"}
+    )
+
+    assert resp.status_code == 200
+    assert [v["version_number"] for v in resp.json()] == [1]
+
+
+def test_delete_is_soft_and_audited(
+    client: TestClient, tmp_path, audit_rows: Callable[[], list[AuditLog]]
+) -> None:
+    _override_store(client, tmp_path)
+    token = _register_and_login(client, "delete@nhs.uk")
+    dataset_id = _upload(client, token).json()["id"]
+
+    resp = client.delete(
+        f"/api/v1/datasets/{dataset_id}", headers={"Authorization": f"Bearer {token}"}
+    )
+
+    assert resp.status_code == 204
+    assert client.get(
+        f"/api/v1/datasets/{dataset_id}", headers={"Authorization": f"Bearer {token}"}
+    ).status_code == 404
+    delete_rows = [r for r in audit_rows() if r.action == "DELETE" and r.status_code == 204]
+    assert len(delete_rows) == 1
+    assert delete_rows[0].resource_id == dataset_id
+
+
+def test_delete_non_owner_is_forbidden(client: TestClient, tmp_path) -> None:
+    _override_store(client, tmp_path)
+    owner_token = _register_and_login(client, "delete-owner@nhs.uk")
+    dataset_id = _upload(client, owner_token).json()["id"]
+    stranger_token = _register_and_login(client, "delete-stranger@nhs.uk")
+
+    resp = client.delete(
+        f"/api/v1/datasets/{dataset_id}", headers={"Authorization": f"Bearer {stranger_token}"}
+    )
+
+    assert resp.status_code == 403
+
+
+def test_delete_unknown_dataset_404s(client: TestClient, tmp_path) -> None:
+    _override_store(client, tmp_path)
+    token = _register_and_login(client, "delete404@nhs.uk")
+
+    resp = client.delete(
+        "/api/v1/datasets/00000000-0000-0000-0000-000000000000",
         headers={"Authorization": f"Bearer {token}"},
     )
 

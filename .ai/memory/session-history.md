@@ -5,6 +5,43 @@
 
 ---
 
+## 2026-07-24 — Sprint 2 #35 (dataset management endpoints): PR #51 merged
+
+**Agent:** Claude Code (Sonnet 5)
+**Branch:** `feat/35-dataset-endpoints` → merged to `develop` via PR #51
+**Did:**
+- Implemented `GET /datasets` (paginated, owner-scoped unless admin),
+  `GET /datasets/{id}` (detail + version history), `GET /datasets/{id}/versions`,
+  `DELETE /datasets/{id}` (soft delete, audited). Repo/service split respected
+  — no ORM queries in the router.
+- Factored the owner-or-admin check into one `_check_access` helper and
+  reused it in `revalidate_latest`/`clean_latest` (#33/#34), removing
+  duplicated inline checks.
+- Updated `test_audit.py`: the pre-#35 tests asserted a 405 placeholder for
+  `GET /api/v1/datasets` (no GET route existed yet) — now asserts the real
+  401/200 behavior against the live endpoint.
+- Self-reviewed inline (no agent swarm), same cost-conscious approach as #34.
+- Closed #35, synced epic #29 (child checklist, progress line).
+
+**Decisions made:**
+- Non-admin list/detail/versions/delete are **owner-scoped**, not just
+  auth-gated — same PHI-leak precedent as #33/#34 (`validation_report`/
+  `column_names` can carry patient-level content, so a stranger must not
+  browse another user's datasets by id or listing).
+- Delete = soft delete only (`deleted_at`); documented in the docstring, not
+  a new ADR (ADR-009 already covers immutability — this is its consequence).
+- `list_for_owner`'s N+1 (one query per dataset for its latest version)
+  logged as a `ponytail:` ceiling, not fixed — fine under the 200-row page cap.
+
+**Next up:**
+- #36 (frontend dataset upload + list UI, plus the missing frontend CI job)
+  is the last child issue in epic #29. Not started — gated on Som's
+  go-ahead per standing practice.
+
+**Refs:** PR #51, issue #35 (closed), epic #29
+
+---
+
 ## 2026-07-24 — Sprint 2 #34 (cleaning pipeline): PR #49 merged
 
 **Agent:** Claude Code (Sonnet 5)

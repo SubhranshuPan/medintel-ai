@@ -5,6 +5,72 @@
 
 ---
 
+## 2026-07-24 — ADR-001-008 PR shipped + merged; session-history landing
+
+**Agent:** OpenCode (deepseek-v4-flash-free)
+**Branch:** `docs/adr-001-008-consequences-rewrite` → merged to `develop` via PR #47
+**Did:**
+- Ran `git fetch`, `git push`, and `gh pr create` for the
+  `docs/adr-001-008-consequences-rewrite` branch — PR #47 opened, reviewed,
+  merged by Som, branch deleted.
+- Pulled merged `develop`, created this session-history entry.
+
+**Decisions made:** None new — standard bookkeeping.
+
+**Next up:**
+- Sprint 2 #34 (cleaning pipeline) still next in build order.
+
+**Refs:** PR #47, commit `179971e` on `docs/adr-001-008-consequences-rewrite`
+
+---
+
+## 2026-07-24 — ADR-001–008 rewritten (Consequences + Context, not just Consequences)
+
+**Agent:** Claude (Sonnet 5, Cowork)
+**Branch:** `docs/adr-001-008-consequences-rewrite` (committed locally, not pushed)
+**Did:**
+- Ran the morning-briefing steps manually (scheduled task's 9:10 AM run was
+  covered separately); found zero repo activity since the 2026-07-17
+  entry, so no session-history write was needed at that point.
+- Som approved proposed action #2 (rewrite ADR-001–008) and #4 (authorize
+  GitHub connector) from that briefing.
+- Read all 8 files and found the problem was worse than the 2026-07-17
+  walkthrough flagged: not just "Consequences" but Context and Alternatives
+  were verbatim copy-pasted across all eight ADRs (e.g. ADR-003's Context
+  talked about "a high-performance Python backend," and ADR-002 listed
+  "Automatic OpenAPI generation" as a React consequence). Rewrote all 8
+  fully — Context, Alternatives Considered, and Consequences — to match the
+  ADR-009+ quality bar, with project-specific reasoning for each stack
+  choice (FastAPI, React, PostgreSQL, Qdrant, LangChain, Docker, GitHub
+  Actions, modular monolith).
+- Created branch `docs/adr-001-008-consequences-rewrite` off `develop` and
+  committed the rewrite locally. Could not push or open a PR — this
+  sandbox has no `gh` CLI and no GitHub push credentials (known limitation,
+  see `medintel-mount-git-quirks` memory); gave Som the exact commands to
+  push and open the PR from his own terminal.
+- Hit the known mounted-repo git quirk again: a stale `.git/index.lock`
+  blocked `git add`/`git commit` with "Operation not permitted" until
+  cleared via `allow_cowork_file_delete`. Also had to set local (not
+  global) `git config user.name`/`user.email` since the sandbox identity
+  was unset — verified `.git/config` read back correctly before and after,
+  per the standing rule not to write git config blind on this mount.
+
+**Decisions made:**
+- None new — this session executed a previously-flagged doc-quality fix,
+  it didn't make a new architecture decision.
+
+**Next up:**
+- Som to review the diff, push `docs/adr-001-008-consequences-rewrite`,
+  and open the PR himself (exact commands given in chat).
+- Som to authorize the GitHub connector (`plugin:engineering:github`) via
+  Cowork connector settings — sandbox can't run the OAuth flow.
+- Sprint 2 #34 (cleaning pipeline) still next in build order, untouched.
+
+**Refs:** local commit `179971e` on `docs/adr-001-008-consequences-rewrite`
+(unpushed)
+
+---
+
 ## 2026-07-17 — Interview-prep walkthrough (Sprint 0–2) written
 
 **Agent:** Claude (Sonnet 5, Cowork)

@@ -3,6 +3,7 @@ import { NavLink, Outlet } from "react-router-dom";
 const NAV_ITEMS = [
   { to: "/dashboard", label: "Clinical Dashboard" },
   { to: "/patients", label: "Patient Cohorts" },
+  { to: "/datasets", label: "Datasets" },
 ] as const;
 
 /** App shell: fixed sidebar + header, routed content in the main region. */

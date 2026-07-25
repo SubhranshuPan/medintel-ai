@@ -102,6 +102,24 @@
   unsynced. Catching that gap afterward doesn't get a `develop` exception —
   same branch + PR requirement as any other change (2026-07-14 entry
   above).
+- **Sprint 3 sequencing — knowledge layer before ranking layer
+  (2026-07-25):** Sprint 3 builds the knowledge-aware layer (typed
+  `knowledge_nodes`/`knowledge_edges` in PostgreSQL, provenance and
+  supersession, query planner, four typed retrieval tools, grounded
+  generation with abstention, evaluation harness). ADR-017's ranking layer
+  (ColBERT, BM25, RRF, cross-encoder, temporal decay) moves to Sprint 4.
+  Reason: ranking upgrades over an unstructured corpus reorder results that
+  are already wrong — supersession, exceptions and multi-hop composition are
+  properties of the data model, not the ranker. **This is sequencing, not
+  descoping** — ADR-017 stands unamended and Sprint 4 implements it in full.
+  Spec: `docs/superpowers/specs/2026-07-25-sprint-3-knowledge-aware-rag-design.md`;
+  epic #58, children #59–#68.
+- **Anthropic as LLM provider does not override the multi-provider rule
+  (2026-07-25):** ADR-022 (pending, #59) selects Claude — Haiku 4.5 for bulk
+  ingestion extraction, Sonnet 5 for grounded generation. It still goes
+  through the LangChain orchestration layer (ADR-005), never a hardcoded
+  provider call inside a service. The "never hardcode a single provider"
+  convention above is about the call site, not the choice.
 
 ---
 
@@ -237,6 +255,20 @@
   descope. If velocity data through Sprint 3–4 shows the full scope isn't
   achievable by November, that's a decision for Som to make explicitly,
   informed by real progress data — not something to pre-empt now.
+- **NICE guideline licensing (opened 2026-07-25, Sprint 3 #61):** NICE
+  clinical guideline content is licensed, and bulk scraping nice.org.uk very
+  likely breaches their terms of use. The Sprint 3 corpus depends on
+  guideline content specifically because it's the only source that exercises
+  supersession and comorbidity-conditional exceptions — the architecture's
+  central claim. Resolve at the ingestion issue (#61), not at evaluation
+  (#67): obtain syndication API access, hand-curate a small subset with
+  attribution, or fall back to a synthetic guideline corpus with
+  deliberately-authored supersessions. Owner: Som. Status: open.
+- **Sprint 3 ingestion LLM cost (opened 2026-07-25, #63):** entity/edge
+  extraction is one LLM call per structural unit across the whole corpus.
+  Haiku 4.5 keeps unit cost low, but a corpus-size cap and a recorded cost
+  estimate are a precondition for starting #63 — not something to discover
+  from the bill afterwards.
 
 ---
 

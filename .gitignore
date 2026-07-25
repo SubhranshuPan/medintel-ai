@@ -12,3 +12,7 @@
 
 # Personal Claude Code overrides (not shared)
 .claude/settings.local.json
+
+# Uploaded dataset objects. backend/.gitignore already covers the Docker layout
+# (cwd=/app); running uvicorn locally from the repo root puts them here instead.
+/storage/

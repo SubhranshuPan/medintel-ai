@@ -120,6 +120,15 @@
   through the LangChain orchestration layer (ADR-005), never a hardcoded
   provider call inside a service. The "never hardcode a single provider"
   convention above is about the call site, not the choice.
+- **Reviewer agents are vendored, not plugin-supplied (2026-07-25):** the `ecc`
+  plugin loaded 67 agents and 277 skills into every session so that we could
+  use eight reviewers. It is now disabled; those eight live in
+  `.claude/agents/` and are invoked by **bare name** — `code-reviewer`,
+  `fastapi-reviewer`, `react-reviewer`, `python-reviewer`, `database-reviewer`,
+  `healthcare-reviewer`, `security-reviewer`, `mle-reviewer` — with no `ecc:`
+  prefix. Anything written before this date that says `ecc:<agent>` is stale.
+  `.claude/*` is gitignored, so the directory is machine-local: re-copy from
+  the plugin cache rather than expecting it in a clone.
 
 ---
 

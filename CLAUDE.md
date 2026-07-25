@@ -89,7 +89,7 @@ Plugins are referenced at the plugin level, not per individual skill — pull wh
 | Plugin | Use for |
 |---|---|
 | `engineering` | Core SDLC skills: architecture/ADRs, system-design, code-review, debug, testing-strategy, deploy-checklist, incident-response, tech-debt, documentation, standup |
-| `ecc` | Large multi-language agent/skill marketplace — `ecc:code-review`, `ecc:fastapi-review`/`fastapi-reviewer`, `ecc:react-review`/`react-reviewer`, `ecc:healthcare-reviewer` (clinical safety/PHI), `ecc:security-review`, `ecc:database-reviewer`, `ecc:a11y-architect`, `ecc:mle-reviewer` (MLOps), `ecc:pr-test-analyzer`, `ecc:build-fix`, `ecc:docs-lookup` (Context7), and more — check `ecc:ecc-guide` when unsure which one applies |
+| Project reviewer agents (`.claude/agents/`) | **The `ecc` plugin was disabled 2026-07-25** (67 agents + 277 skills of context overhead for the eight agents we actually use). Those eight were vendored into `.claude/agents/` and are invoked by bare name via the Agent tool — no `ecc:` prefix: `code-reviewer`, `fastapi-reviewer`, `react-reviewer`, `python-reviewer`, `database-reviewer` (PostgreSQL/migrations), `healthcare-reviewer` (clinical safety/PHI), `security-reviewer`, `mle-reviewer` (MLOps). This directory is gitignored (`.claude/*`), so it is machine-local — re-copy from the `ecc` plugin cache if it goes missing on another machine. |
 | `code-review` (top-level) | Quick `/code-review` on a PR/diff outside the `ecc` marketplace flow |
 | `ui-ux-pro-max` | Frontend design system work — styles, color palettes, font pairings, component patterns for the dataset UI, clinical dashboard, and future patient-facing screens |
 | `frontend-design` | General frontend implementation guidance, complements `ui-ux-pro-max` |

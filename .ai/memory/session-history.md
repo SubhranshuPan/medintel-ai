@@ -5,6 +5,47 @@
 
 ---
 
+## 2026-07-25 (later) — Context-budget audit: `ecc` plugin disabled, reviewers vendored
+
+**Agent:** Claude Code (Opus 5)
+**Branch:** `chore/trim-agent-toolchain` → PR
+**Did:**
+- Ran a context-overhead audit of the Claude Code toolchain. Real plugin
+  sizes: `ecc` is 67 agents / 277 skills / 93 commands (an earlier estimate of
+  306/887 was wrong — it walked the whole cache tree and double-counted nested
+  copies). `ecc`'s prompt-resident cost is ~4,500 tokens, almost all of it
+  agent `description` frontmatter that loads whether or not an agent is ever
+  invoked.
+- **Disabled the `ecc` plugin** (`ecc@ecc: false` in `~/.claude/settings.json`)
+  and vendored the eight reviewers this project actually uses into
+  `.claude/agents/`: `code-reviewer`, `fastapi-reviewer`, `react-reviewer`,
+  `python-reviewer`, `database-reviewer`, `healthcare-reviewer`,
+  `security-reviewer`, `mle-reviewer`. They are self-contained (no
+  plugin-root references) and are now invoked by **bare name**, without the
+  `ecc:` prefix. `.claude/*` is gitignored, so these files are machine-local
+  and must be re-copied from the plugin cache on another machine.
+- Lost with `ecc`, and accepted: `ecc-guide`, `build-fix`, `pr-test-analyzer`,
+  `a11y-architect`, `context-budget`, `strategic-compact`, and ECC's hooks
+  (GateGuard, suggest-compact). `docs-lookup` is unaffected — the `context7`
+  plugin is installed separately. The `ECC_DISABLED_HOOKS` entry in
+  `.claude/settings.local.json` is now inert.
+- **Uninstalled the `vercel` plugin** (unused here; it was already disabled, so
+  it had been costing nothing).
+- Confirmed the ten auth-required MCP servers (datadog, pagerduty, bigquery,
+  asana, atlassian, clickup, linear, monday, notion, slack) are **claude.ai-side
+  connectors, not local plugins** — they have no cache directory and no entry in
+  `installed_plugins.json`, so they cannot be removed from any file in this
+  repo or in `~/.claude/`. Som to disconnect them via claude.ai → Settings →
+  Connectors. GitHub MCP deliberately kept.
+
+**Flagged to Som (open, not resolved here):** `~/.claude.json` stores the
+GitHub MCP server's personal access token **in plaintext** under this project's
+entry. It needs rotating at github.com/settings/tokens.
+
+**Decisions:** recorded in `.ai/memory/project-memory.md` (Conventions Adopted).
+
+---
+
 ## 2026-07-25 — Local stack verification (no Docker) + Sprint 3 scoped: epic #58 + issues #59–#68
 
 **Agent:** Claude Code (Opus 5)

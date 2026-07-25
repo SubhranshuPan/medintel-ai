@@ -5,6 +5,57 @@
 
 ---
 
+## 2026-07-25 — Local stack verification (no Docker) + Sprint 3 scoped: epic #58 + issues #59–#68
+
+**Agent:** Claude Code (Opus 5)
+**Branch:** work sits uncommitted in the working tree; lands via a fresh
+branch + PR, not committed straight to `develop`.
+**Did:**
+- Verified the full stack end to end **without Docker**, against the native
+  Windows PostgreSQL 18 service on `localhost:5432` (Docker daemon was off).
+  Som created the `medintel` role + database via pgAdmin; `alembic upgrade
+  head` then applied all three revisions clean. `GET /api/v1/health` → 200,
+  `GET /api/v1/health/ready` → 200 `{"database":"ok"}`, `pytest` 62 passed.
+  Frontend (Vite 6.4.3) health card shows "Connected", v0.1.0, development.
+  Sprint 2 flow re-verified on the real stack: register → login through the
+  UI form → CSV upload (`validation_status: passed`, v1, 5 rows, sha256
+  checksum) → dataset list renders the version row.
+- Added a `medintel-backend` entry to `.claude/launch.json` so the API is
+  started the same managed way the frontend already was
+  (`python -m uvicorn app.main:app --app-dir backend --port 8000 --reload`).
+- Scoped Sprint 3 from the knowledge-aware RAG guide Som supplied. Design
+  spec written to
+  `docs/superpowers/specs/2026-07-25-sprint-3-knowledge-aware-rag-design.md`.
+  Created epic **#58** plus ten child issues **#59–#68** on the existing
+  "Sprint 3 - AI & RAG" milestone, and a `sprint-3` label to match the
+  `sprint-1`/`sprint-2` convention.
+
+**Decisions made:**
+- **Sprint 3 = the knowledge layer; ADR-017's ranking layer moves to Sprint
+  4.** Ranking upgrades over an unstructured corpus reorder results that are
+  already the wrong results — supersession, exceptions and multi-hop
+  composition are properties of the data model, not the ranker. Sequencing
+  only: ADR-017 stands unamended.
+- **Knowledge graph lives in PostgreSQL** (`knowledge_nodes` /
+  `knowledge_edges`, depth-capped recursive CTE), not Neo4j — avoids a third
+  source of truth alongside PostgreSQL and Qdrant at this corpus size. To be
+  recorded as ADR-021 in #59.
+- **Anthropic Claude as LLM provider** — Haiku 4.5 for bulk ingestion
+  extraction, Sonnet 5 for grounded generation, via the existing LangChain
+  layer (ADR-005). To be recorded as ADR-022 in #59.
+- Corpus: PubMed E-utilities + a NICE guideline subset. Chat UI and the
+  evaluation harness are both in-sprint, not deferred.
+
+**Risks flagged (carried into the epic):** NICE content licensing (bulk
+scraping likely breaches their terms — resolve at #61, not at #67); ingestion
+extraction cost needs a corpus cap and estimate before #63; the planner's LLM
+round trip against ADR-017's <500ms p95 retrieval target (#65); extraction
+quality drift, which is why edges carry `extracted_by`.
+
+**Next:** Start #59 (ADR-021 + ADR-022), then #60 in build order.
+
+---
+
 ## 2026-07-25 — Frontend UI polish (Animate UI/Lenis/Aceternity UI): PR #55/#56 merged, ADR-020 + doc sync
 
 **Agent:** Claude Code (Sonnet 5)

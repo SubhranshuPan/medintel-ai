@@ -84,21 +84,23 @@ Handle these tasks immediately without suggesting Opus:
 
 ## Connectors and Skills
 
-Skills relevant to this project (Claude Code / Cowork `engineering` plugin, plus general document skills):
+Plugins are referenced at the plugin level, not per individual skill — pull whichever skill/agent/command inside the plugin fits the moment.
 
-| Skill | Use for |
+| Plugin | Use for |
 |---|---|
-| `engineering:architecture` | ADRs — evaluate/document design decisions (this repo already has 12) |
-| `engineering:system-design` | API design, data modeling, service boundaries for Sprint 1+ |
-| `engineering:code-review` | Reviewing diffs/PRs for security, performance, correctness |
-| `engineering:debug` | Structured reproduce → isolate → diagnose → fix sessions |
-| `engineering:testing-strategy` | Test plans once backend/frontend code lands |
-| `engineering:deploy-checklist` | Pre-deployment verification (Railway/Render, later AWS) |
-| `engineering:incident-response` | Triage/postmortem if something breaks post-deploy |
-| `engineering:tech-debt` | Refactor/code-health audits as the codebase grows |
-| `engineering:documentation` | READMEs, runbooks, API docs |
-| `engineering:standup` | Turning commit/PR activity into a standup-style update |
-| `docx` / `pdf` / `xlsx` | Generating reports, resumes, or data exports as deliverables |
+| `engineering` | Core SDLC skills: architecture/ADRs, system-design, code-review, debug, testing-strategy, deploy-checklist, incident-response, tech-debt, documentation, standup |
+| `ecc` | Large multi-language agent/skill marketplace — `ecc:code-review`, `ecc:fastapi-review`/`fastapi-reviewer`, `ecc:react-review`/`react-reviewer`, `ecc:healthcare-reviewer` (clinical safety/PHI), `ecc:security-review`, `ecc:database-reviewer`, `ecc:a11y-architect`, `ecc:mle-reviewer` (MLOps), `ecc:pr-test-analyzer`, `ecc:build-fix`, `ecc:docs-lookup` (Context7), and more — check `ecc:ecc-guide` when unsure which one applies |
+| `code-review` (top-level) | Quick `/code-review` on a PR/diff outside the `ecc` marketplace flow |
+| `ui-ux-pro-max` | Frontend design system work — styles, color palettes, font pairings, component patterns for the dataset UI, clinical dashboard, and future patient-facing screens |
+| `frontend-design` | General frontend implementation guidance, complements `ui-ux-pro-max` |
+| `dataviz` | Chart/graph/dashboard design — directly relevant to the clinical analytics dashboard pillar and SHAP explainability visualizations |
+| `playwright-skill` | Browser-driven E2E testing for the React frontend |
+| `ponytail` | Default lazy-but-correct coding discipline (YAGNI, reuse before build, shortest safe diff) — applies to all code changes in this repo |
+| `caveman` | Terse chat/response style — does not apply to code, commits, or PR bodies, which stay normal prose |
+| `superpowers` | Process skills — brainstorming before new features, systematic-debugging before bug fixes, TDD, writing/executing plans |
+| `claude-code-setup` | `claude-automation-recommender` — surfaces hooks/automation opportunities for this repo's workflow |
+| `claude-md-management` | Keeping this file itself current as the project evolves |
+| `anthropic-skills` | `docx`/`pdf`/`xlsx` for reports, resumes, or data exports as deliverables |
 
 Connectors:
 
@@ -106,4 +108,4 @@ Connectors:
 |---|---|---|
 | GitHub (`plugin:engineering:github`) | Not yet authorized | PR/issue status, repo hygiene checks — authorize via Cowork Settings → Connectors → GitHub, or `claude mcp` in an interactive Claude Code session |
 
-Update this table when new skills are installed or connectors are authorized.
+Update this table when new plugins are installed or connectors are authorized.

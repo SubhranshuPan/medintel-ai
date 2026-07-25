@@ -96,7 +96,7 @@ monolith, none introduce a separate service).
 
 | Layer | Stack |
 |---|---|
-| Frontend | React 19, TypeScript, Vite, Tailwind, shadcn/ui, Zustand, React Router, RHF/Zod, Recharts |
+| Frontend | React 19, TypeScript, Vite, Tailwind, shadcn/ui, Animate UI, Aceternity UI, Motion, Lenis, Zustand, React Router, RHF/Zod, Recharts |
 | Backend | FastAPI, Python 3.12+, SQLAlchemy 2.0, Pydantic v2, Alembic, JWT/OAuth2 |
 | AI/LLM | LangChain + LangGraph, multi-provider (OpenAI/Anthropic/Gemini), Qdrant, RAG |
 | Advanced Retrieval | ColBERT (dense), BM25 (sparse), Reciprocal Rank Fusion, cross-encoder re-ranker, citation graph traversal (ADR-017) |
@@ -170,6 +170,14 @@ across the app rather than introducing a second one per pillar. Grafana
 dashboards (ADR-016) are a separate, ops-facing surface (not embedded in
 the product frontend) — Recharts remains the only charting library inside
 the React app itself, avoiding a second frontend charting dependency.
+
+**UI component/animation stack (ADR-020, landed Sprint 2 #36 follow-up):**
+shadcn/ui (design tokens + base primitives), Animate UI and Aceternity UI
+(animated components, both Motion-based, distributed via the shadcn CLI and
+owned in-repo under `frontend/src/components/`), and Lenis (smooth scroll,
+`useLenis` hook in `AppLayout`). This is a component/motion layer only — it
+doesn't touch charting (Recharts stays the only charting library) or the
+Zustand/React Router/RHF choices above.
 
 ---
 

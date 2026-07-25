@@ -64,4 +64,5 @@ React + TypeScript was selected as the frontend framework.
 
 - ADR-001 — FastAPI as backend framework
 - ADR-011 — SHAP explainability
+- ADR-020 — Frontend UI component & animation library stack
 - `docs/00_VISION_ML_PLATFORM.md`

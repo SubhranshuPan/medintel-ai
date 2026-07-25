@@ -84,6 +84,24 @@
   cross-cutting scope/vision/architecture work (ADRs, core specs) that isn't tied
   to a single sprint. Don't file this kind of work under a Sprint milestone —
   Sprint milestones (#3–#7) track sprint-scoped delivery only.
+- **Frontend UI component/animation stack landed** (2026-07-25, PR #56;
+  written up as ADR-020): shadcn/ui, Animate UI, Aceternity UI, Motion, and
+  Lenis — supersedes the 2026-07-12 entry above that deferred shadcn/ui
+  "until a feature screen needs it." `inspira-ui`, originally requested
+  alongside Animate UI/Lenis, was swapped for Aceternity UI — inspira-ui is
+  Vue/Nuxt-only and cannot run in this React 19 stack (ADR-002). Approved
+  libraries are documented as a project skill
+  (`.claude/skills/frontend-animation-libs/SKILL.md`, tracked via a
+  `.gitignore` exception since `.claude/` is otherwise fully ignored) so
+  future frontend work defaults to these instead of hand-rolled animation.
+  Components are copy-pasted into `frontend/src/components/` via the shadcn
+  CLI, not opaque npm deps — full rationale/alternatives in ADR-020.
+- **Documentation-sync passes for someone else's merged PR still go through
+  a PR** (2026-07-25): PR #56 (frontend UI polish) shipped with "No
+  documentation changes required" checked, leaving ADRs/TRD/`.ai/`
+  unsynced. Catching that gap afterward doesn't get a `develop` exception —
+  same branch + PR requirement as any other change (2026-07-14 entry
+  above).
 
 ---
 

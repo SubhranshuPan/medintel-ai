@@ -1,5 +1,8 @@
 .claude/*
 !.claude/skills/
+# Reviewer agents vendored from the ECC plugin (MIT) — see .claude/agents/README.md.
+# Tracked so a fresh clone has them without re-copying from a local plugin cache.
+!.claude/agents/
 
 # Root-level Obsidian vault (local editor state, not project code)
 .obsidian/

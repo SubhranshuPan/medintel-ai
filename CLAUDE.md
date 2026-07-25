@@ -94,6 +94,7 @@ Plugins are referenced at the plugin level, not per individual skill — pull wh
 | `ui-ux-pro-max` | Frontend design system work — styles, color palettes, font pairings, component patterns for the dataset UI, clinical dashboard, and future patient-facing screens |
 | `frontend-design` | General frontend implementation guidance, complements `ui-ux-pro-max` |
 | `dataviz` | Chart/graph/dashboard design — directly relevant to the clinical analytics dashboard pillar and SHAP explainability visualizations |
+| `frontend-animation-libs` (project skill, `.claude/skills/`) | Animate UI, Lenis, Aceternity UI — the approved third-party libraries for frontend component polish/scroll/motion. Check this before hand-rolling animation on any `frontend/` page. |
 | `playwright-skill` | Browser-driven E2E testing for the React frontend |
 | `ponytail` | Default lazy-but-correct coding discipline (YAGNI, reuse before build, shortest safe diff) — applies to all code changes in this repo |
 | `caveman` | Terse chat/response style — does not apply to code, commits, or PR bodies, which stay normal prose |

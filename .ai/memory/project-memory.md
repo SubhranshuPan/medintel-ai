@@ -127,8 +127,12 @@
   `fastapi-reviewer`, `react-reviewer`, `python-reviewer`, `database-reviewer`,
   `healthcare-reviewer`, `security-reviewer`, `mle-reviewer` — with no `ecc:`
   prefix. Anything written before this date that says `ecc:<agent>` is stale.
-  `.claude/*` is gitignored, so the directory is machine-local: re-copy from
-  the plugin cache rather than expecting it in a clone.
+  `.gitignore` re-includes `.claude/agents/` (as it already did for
+  `.claude/skills/`), so these eight are tracked and present in a fresh clone —
+  they are a point-in-time copy of ECC v2.0.0 (MIT) and do not auto-update;
+  provenance and refresh steps are in `.claude/agents/README.md`. The rest of
+  `.claude/` (`launch.json`, `settings.local.json`, `commands/`) stays
+  machine-local.
 
 ---
 

@@ -22,8 +22,10 @@
   `python-reviewer`, `database-reviewer`, `healthcare-reviewer`,
   `security-reviewer`, `mle-reviewer`. They are self-contained (no
   plugin-root references) and are now invoked by **bare name**, without the
-  `ecc:` prefix. `.claude/*` is gitignored, so these files are machine-local
-  and must be re-copied from the plugin cache on another machine.
+  `ecc:` prefix. `.gitignore` now re-includes `.claude/agents/` alongside
+  `.claude/skills/`, so they are tracked and travel with a clone; provenance
+  and the refresh procedure are in `.claude/agents/README.md` (ECC v2.0.0,
+  MIT). Everything else under `.claude/` stays machine-local.
 - Lost with `ecc`, and accepted: `ecc-guide`, `build-fix`, `pr-test-analyzer`,
   `a11y-architect`, `context-budget`, `strategic-compact`, and ECC's hooks
   (GateGuard, suggest-compact). `docs-lookup` is unaffected — the `context7`

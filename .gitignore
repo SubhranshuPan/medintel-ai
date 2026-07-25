@@ -1,4 +1,5 @@
-.claude/
+.claude/*
+!.claude/skills/
 
 # Root-level Obsidian vault (local editor state, not project code)
 .obsidian/

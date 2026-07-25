@@ -5,6 +5,60 @@
 
 ---
 
+## 2026-07-25 — Frontend UI polish (Animate UI/Lenis/Aceternity UI): PR #55/#56 merged, ADR-020 + doc sync
+
+**Agent:** Claude Code (Sonnet 5)
+**Branch:** `docs/frontend-animation-libs-skill` → PR #55 (skill) and PR #56
+(`feat(frontend): integrate Shadcn and Aceternity UI animations`), both
+merged to `develop`. This entry's own doc-sync work lands via a fresh branch
++ PR, not committed straight to `develop`.
+**Did:**
+- Added a project skill (`.claude/skills/frontend-animation-libs/SKILL.md`)
+  documenting Animate UI, Lenis, and Aceternity UI as the approved
+  third-party frontend libraries — swapped `inspira-ui` (originally
+  requested) for Aceternity UI since inspira-ui is Vue/Nuxt-only,
+  incompatible with this repo's React 19 stack (ADR-002). Carved a
+  `.gitignore` exception (`.claude/*` + `!.claude/skills/`) so project
+  skills stay tracked instead of being swallowed by the blanket `.claude/`
+  ignore.
+- Reviewed and verified PR #56's frontend work (already committed/merged by
+  Som before this session picked back up): shadcn/ui init (`components.json`,
+  path alias `@/*`), Motion, Lenis, and copy-in components under
+  `frontend/src/components/{ui,animate-ui}/` — `Button`/`Input`/`Card`/etc.
+  (shadcn base), `background-beams`/`spotlight`/`text-generate-effect`/
+  `moving-border` (Aceternity), `tabs`/`tooltip` (Animate UI), `useLenis`
+  hook wired into `AppLayout`'s `<main>`. `LoginPage`, `DashboardPage`,
+  `DatasetsPage` restyled on the new oklch design-token system.
+- Verified end-to-end against a live stack: started Docker Desktop + `docker
+  compose up`, started the Vite dev server, registered a test user via the
+  API, logged in through the actual UI (Chrome), confirmed the dashboard's
+  live backend-health card shows "Connected", and confirmed the datasets
+  list renders real API data (browser tooling has no OS file-picker
+  automation, so the CSV upload itself was verified directly against
+  `POST /datasets` with the UI's own auth token — same code path the
+  upload form calls).
+- PR #56 shipped with "No documentation changes required" checked — this
+  session closes that gap: **ADR-020** written (frontend UI
+  component/animation library stack: shadcn/ui + Animate UI + Aceternity UI
+  + Motion + Lenis, alternatives considered, consequences), linked from
+  ADR-002's References. `docs/02_TRD.md` frontend stack table and §6
+  updated to list the new libraries. `.ai/llm-wiki/02_tech_stack.md`
+  frontend list updated to match. `CLAUDE.md`'s Project status line was
+  stale (still said Sprint 2/epic #29 "in progress" with #34–#36 "next" —
+  all three were actually merged and epic #29 is closed) — corrected in the
+  same pass.
+
+**Decisions made:**
+- Aceternity UI adopted as the React-compatible substitute for inspira-ui —
+  full rationale in ADR-020, not repeated here.
+- Doc-sync work for someone else's already-merged PR (#56) still goes
+  through its own branch + PR per the "every commit, no exception" branch
+  policy — bookkeeping-adjacent but not exempt from the PR requirement.
+
+**Next:** Sprint 3 (AI & RAG) — not yet broken into issues.
+
+---
+
 ## 2026-07-24 — Sprint 2 #36 (frontend datasets UI): PR #53 merged — epic #29 scope complete
 
 **Agent:** Claude Code (Sonnet 5)

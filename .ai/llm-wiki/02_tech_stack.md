@@ -7,6 +7,10 @@
 - Vite
 - Tailwind CSS
 - shadcn/ui
+- Animate UI
+- Aceternity UI
+- Motion
+- Lenis
 - Zustand
 
 ---

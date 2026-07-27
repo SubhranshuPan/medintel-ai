@@ -115,7 +115,7 @@
   Spec: `docs/superpowers/specs/2026-07-25-sprint-3-knowledge-aware-rag-design.md`;
   epic #58, children #59–#68.
 - **Anthropic as LLM provider does not override the multi-provider rule
-  (2026-07-25):** ADR-022 (pending, #59) selects Claude — Haiku 4.5 for bulk
+  (2026-07-25):** ADR-022 (accepted 2026-07-27, #59) selects Claude — Haiku 4.5 for bulk
   ingestion extraction, Sonnet 5 for grounded generation. It still goes
   through the LangChain orchestration layer (ADR-005), never a hardcoded
   provider call inside a service. The "never hardcode a single provider"

@@ -5,6 +5,55 @@
 
 ---
 
+## 2026-07-27 — Sprint 3 opens: ADR-021/022 accepted, knowledge graph storage landed
+
+**Agent:** Claude Code (Opus 5)
+**Branches:** `docs/adr-021-022-sprint-3-foundations` → PR #71 (merged),
+`feat/knowledge-graph-models-60` → PR #72 (merged)
+**Issues:** #59 and #60 closed; epic #58 at 2/10 children
+
+**Did:**
+- **#59 (PR #71)** — ADR-021 (knowledge-aware RAG, PostgreSQL graph store) and
+  ADR-022 (Anthropic Claude as LLM provider) accepted. `docs/architecture/adr/README.md`
+  gained an index of all 22 records; it had been template-only since it was
+  created. ADR-021 records the ADR-017 move to Sprint 4 explicitly as a
+  **sequencing decision, not a descoping one**, per the binding scope mandate.
+- **#60 (PR #72)** — `knowledge_nodes` / `knowledge_edges` models, migration
+  `a26c505784c7`, nullable `embeddings.node_id`, and `KnowledgeNodeRepository` /
+  `KnowledgeEdgeRepository` with a depth-capped, cycle-safe recursive-CTE
+  traversal. Closed edge set now enforced by a PostgreSQL enum plus foreign
+  keys. 79 tests green.
+
+**Worth remembering (three defects the SQLite suite would have hidden):**
+- SQLite stores UUIDs as undashed hex, PostgreSQL as dashed text. The
+  traversal's visited-path string is built from SQL `cast()` rather than a
+  Python f-string for exactly this reason.
+- PostgreSQL orders an enum by *declaration* order; SQLite orders it
+  alphabetically as text. `ORDER BY edge_type` therefore disagreed across
+  dialects — and on SQLite `CITES` outranked `SUPERSEDES`, so a node pair
+  carrying both edges was reported as merely cited when it was actually
+  replaced. Replaced with an explicit `_edge_priority` CASE applied to both the
+  dedup and the `limit` ordering.
+- `tests/conftest.py` now sets `PRAGMA foreign_keys=ON`. SQLite ignores foreign
+  keys unless asked, per connection, so the cascade test would otherwise have
+  passed by doing nothing.
+
+**Process note:** every PR went through `/code-review:code-review` before merge.
+#72 took three rounds; the first found nothing above the skill's 80-point
+threshold, but rounds two and three (a database pass and a clinical-safety
+pass) found the edge-ranking defect above and an unsafe `active` default on
+`knowledge_nodes.status`, now removed so a forgotten status is an insert error
+rather than silently-published clinical guidance.
+
+**Carried forward:** a cross-row invariant this layer cannot enforce is recorded
+on #63 — a `SUPERSEDES` edge and its target's `status` must be written in the
+same transaction, or the graph and the column retrieval filters on can disagree.
+
+**Next:** #61 (corpus ingestion). The NICE licensing question must be resolved
+inside that issue, not deferred.
+
+---
+
 ## 2026-07-25 (later) — Context-budget audit: `ecc` plugin disabled, reviewers vendored
 
 **Agent:** Claude Code (Opus 5)

@@ -44,11 +44,16 @@ def _engine(tmp_path) -> Iterator[AsyncEngine]:
     # default journal mode takes an exclusive lock on commit, and the default
     # busy timeout is 0). WAL lets a writer and the not-yet-closed reader
     # coexist; busy_timeout makes SQLite retry briefly instead of erroring.
+    #
+    # foreign_keys: SQLite ignores foreign keys unless asked, per connection.
+    # Without this, ON DELETE CASCADE is a no-op here and a cascade test would
+    # pass by doing nothing while the real Postgres behaviour went unverified.
     @event.listens_for(engine.sync_engine, "connect")
     def _set_sqlite_pragma(dbapi_connection, _connection_record) -> None:
         cursor = dbapi_connection.cursor()
         cursor.execute("PRAGMA journal_mode=WAL")
         cursor.execute("PRAGMA busy_timeout=30000")
+        cursor.execute("PRAGMA foreign_keys=ON")
         cursor.close()
 
     async def _create_schema() -> None:

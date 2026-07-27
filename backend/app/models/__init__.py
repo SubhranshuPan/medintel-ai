@@ -12,6 +12,15 @@ from app.models.conversation import Conversation
 from app.models.dataset import Dataset, DatasetVersion, ValidationStatus, VersionOrigin
 from app.models.document import Document
 from app.models.embedding import Embedding
+from app.models.knowledge import (
+    KnowledgeEdge,
+    KnowledgeEdgeType,
+    KnowledgeNode,
+    KnowledgeNodeType,
+    KnowledgeSourceType,
+    KnowledgeStatus,
+    UpdateCadence,
+)
 from app.models.message import Message, MessageRole
 from app.models.user import User, UserRole
 
@@ -24,8 +33,15 @@ __all__ = [
     "DatasetVersion",
     "Document",
     "Embedding",
+    "KnowledgeEdge",
+    "KnowledgeEdgeType",
+    "KnowledgeNode",
+    "KnowledgeNodeType",
+    "KnowledgeSourceType",
+    "KnowledgeStatus",
     "Message",
     "MessageRole",
+    "UpdateCadence",
     "User",
     "UserRole",
     "ValidationStatus",

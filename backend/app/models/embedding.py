@@ -28,5 +28,15 @@ class Embedding(UUIDMixin, TimestampMixin, Base):
     text_chunk: Mapped[str] = mapped_column(Text)
     # Qdrant point id for the stored vector.
     vector_id: Mapped[str] = mapped_column(String(255), index=True)
+    # The knowledge node this chunk realises (ADR-021). Nullable: chunks
+    # embedded before the knowledge layer existed, and any chunk whose
+    # extraction produced no node, have none. The chunk stays a retrieval
+    # handle; the node is the unit of truth.
+    node_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey(
+            "knowledge_nodes.id", ondelete="SET NULL", name="fk_embeddings_node_id"
+        ),
+        index=True,
+    )
 
     document: Mapped["Document"] = relationship(back_populates="embeddings")

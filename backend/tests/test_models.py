@@ -28,6 +28,8 @@ def test_all_tables_registered() -> None:
         "datasets",
         "dataset_versions",
         "audit_logs",
+        "knowledge_nodes",
+        "knowledge_edges",
     }
 
 

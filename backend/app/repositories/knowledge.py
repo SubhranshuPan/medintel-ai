@@ -17,7 +17,7 @@ import enum
 from typing import NamedTuple
 from uuid import UUID
 
-from sqlalchemy import String, cast, func, literal, or_, select
+from sqlalchemy import String, case, cast, func, literal, or_, select
 from sqlalchemy.sql import ColumnElement
 
 from app.models.knowledge import KnowledgeEdge, KnowledgeEdgeType, KnowledgeNode
@@ -89,6 +89,24 @@ def _incident(
     )
 
 
+def _edge_priority(edge_type: ColumnElement[KnowledgeEdgeType]) -> ColumnElement[int]:
+    """Sort key placing safety-critical edge types ahead of incidental ones.
+
+    Ordering on the enum column directly is not an option: PostgreSQL orders an
+    enum by declaration order while SQLite stores it as text and orders it
+    alphabetically, so the two dialects would disagree about which edge wins.
+    An explicit ranking makes the order the same everywhere *and* makes it the
+    clinically right one — a hit reached by ``SUPERSEDES`` or ``EXCEPTION_TO``
+    outranks one reached by a citation, so it is never the row truncation drops.
+    """
+    return case(
+        (edge_type == KnowledgeEdgeType.SUPERSEDES, 0),
+        (edge_type == KnowledgeEdgeType.EXCEPTION_TO, 1),
+        (edge_type == KnowledgeEdgeType.DEFINED_BY, 2),
+        else_=3,  # CITES, RELATED_TO — context, not safety signal
+    )
+
+
 def _delimited(node: ColumnElement[UUID]) -> ColumnElement[str]:
     """``node``'s id wrapped in separators, as it appears in a visited path.
 
@@ -108,27 +126,29 @@ class KnowledgeNodeRepository(BaseRepository[KnowledgeNode]):
         self,
         node_id: UUID,
         *,
-        edge_type: KnowledgeEdgeType | None = None,
+        edge_type: KnowledgeEdgeType | None,
         hops: int = DEFAULT_TRAVERSAL_DEPTH,
         direction: TraversalDirection = TraversalDirection.outgoing,
         limit: int = DEFAULT_TRAVERSAL_LIMIT,
     ) -> list[TraversalHit]:
-        """Nodes reachable from ``node_id``, nearest first.
+        """Nodes reachable from ``node_id``, nearest and most critical first.
 
-        ``edge_type=None`` follows every edge type. ``hops`` is clamped to
-        ``[1, MAX_TRAVERSAL_DEPTH]``. The start node is never returned, and a
-        node reachable by several paths is returned once, at its shortest depth.
+        ``edge_type`` is required rather than defaulted: following every edge
+        type is a legitimate exploratory query, but it should be an explicit
+        choice at the call site, not what you get by forgetting the argument.
+        Pass ``None`` to follow all of them.
+
+        ``hops`` is clamped to ``[1, MAX_TRAVERSAL_DEPTH]``. The start node is
+        never returned, and a node reachable by several paths is returned once,
+        by its shortest path.
 
         Bounded on both axes, because the depth cap alone does not bound the
         result *size* — a heavily cited guideline can fan out to thousands of
-        nodes within three hops. Truncation is depth-ordered, so what falls off
-        the end is the most distant material.
-
-        **A supersession or exception check must pass ``edge_type``.** Within a
-        single depth the cut is arbitrary, so a ``SUPERSEDES`` hit can be
-        truncated away by unrelated ``CITES`` neighbours if you ask for
-        everything and filter afterwards. Asking the database for the edge type
-        you care about is both cheaper and the only version that is safe.
+        nodes within three hops. Ordering is ``(depth, edge priority, id)``, so
+        truncation drops the most distant, least safety-relevant material:
+        within a depth a ``SUPERSEDES`` or ``EXCEPTION_TO`` hit always outranks
+        a citation and cannot be cut in favour of one. The same ordering
+        decides which edge represents a node reachable by more than one.
 
         Cycle-safe by construction: a node already on the current path is not
         re-entered, so a looping ``SUPERSEDES`` chain terminates rather than
@@ -181,15 +201,14 @@ class KnowledgeNodeRepository(BaseRepository[KnowledgeNode]):
         # Several paths can reach the same node; report it once, by the
         # shortest. A window function rather than GROUP BY / MIN, because the
         # edge type has to survive the dedup alongside the depth.
+        priority = _edge_priority(walk.c.edge_type)
         ranked = select(
             walk.c.node_id,
             walk.c.depth,
             walk.c.edge_type,
+            priority.label("priority"),
             func.row_number()
-            .over(
-                partition_by=walk.c.node_id,
-                order_by=(walk.c.depth, walk.c.edge_type),
-            )
+            .over(partition_by=walk.c.node_id, order_by=(walk.c.depth, priority))
             .label("rank"),
         ).subquery()
         shortest = select(ranked).where(ranked.c.rank == 1).subquery()
@@ -197,7 +216,9 @@ class KnowledgeNodeRepository(BaseRepository[KnowledgeNode]):
         result = await self.session.execute(
             select(KnowledgeNode, shortest.c.depth, shortest.c.edge_type)
             .join(shortest, KnowledgeNode.id == shortest.c.node_id)
-            .order_by(shortest.c.depth, KnowledgeNode.id)
+            # Priority before id: within a depth the cut must not be arbitrary,
+            # or a supersession notice can be truncated away by citation noise.
+            .order_by(shortest.c.depth, shortest.c.priority, KnowledgeNode.id)
             .limit(limit)
         )
         return [

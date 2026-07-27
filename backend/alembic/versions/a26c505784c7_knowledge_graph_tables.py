@@ -1,8 +1,8 @@
 """knowledge graph tables
 
-Revision ID: f637464718ce
+Revision ID: a26c505784c7
 Revises: 30d783a96ae4
-Create Date: 2026-07-27 17:01:45.951427
+Create Date: 2026-07-27 17:17:19.728447
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = 'f637464718ce'
+revision: str = 'a26c505784c7'
 down_revision: Union[str, Sequence[str], None] = '30d783a96ae4'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None

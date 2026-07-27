@@ -128,8 +128,12 @@ class KnowledgeNode(UUIDMixin, TimestampMixin, Base):
     effective_date: Mapped[date | None] = mapped_column(Date)
 
     # --- lifecycle and authority ---
+    # Deliberately no default. Defaulting to ``active`` would mean any writer
+    # that forgets the field silently publishes fully retrievable guidance;
+    # required-and-NOT-NULL turns the same mistake into an insert error at
+    # ingestion, which is the failure direction ADR-021 asks for.
     status: Mapped[KnowledgeStatus] = mapped_column(
-        Enum(KnowledgeStatus, name="knowledge_status"), default=KnowledgeStatus.active
+        Enum(KnowledgeStatus, name="knowledge_status")
     )
     # Source quality tier, lower = more authoritative. Consumed by the ranking
     # layer in Sprint 4 (ADR-017); stored now so ingestion never has to be re-run

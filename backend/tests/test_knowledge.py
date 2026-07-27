@@ -39,6 +39,9 @@ def _node(title: str, **overrides) -> KnowledgeNode:
         "text": f"Clinical guidance: {title}",
         "source_id": title.lower().replace(" ", "-"),
         "source_type": KnowledgeSourceType.nice,
+        # Stated explicitly because the column has no default — see
+        # test_status_must_be_stated_explicitly.
+        "status": KnowledgeStatus.active,
     }
     return KnowledgeNode(**{**defaults, **overrides})
 
@@ -48,8 +51,37 @@ def session_factory(_engine: AsyncEngine) -> Callable[[], AsyncSession]:
     return async_sessionmaker(_engine, class_=AsyncSession, expire_on_commit=False)
 
 
+def test_status_must_be_stated_explicitly(session_factory) -> None:
+    """A forgotten status must fail loudly, not publish as active guidance.
+
+    ``status`` carries no default precisely so that a writer which omits it
+    errors at ingestion rather than silently making unvetted or withdrawn
+    guidance fully retrievable.
+    """
+
+    async def _run() -> bool:
+        async with session_factory() as session:
+            session.add(
+                KnowledgeNode(
+                    node_type=KnowledgeNodeType.recommendation,
+                    title="No status",
+                    text="...",
+                    source_id="no-status",
+                    source_type=KnowledgeSourceType.nice,
+                )
+            )
+            try:
+                await session.commit()
+            except IntegrityError:
+                await session.rollback()
+                return True
+            return False
+
+    assert asyncio.run(_run())
+
+
 def test_node_defaults(session_factory) -> None:
-    """Status and cadence default to the safe values, not to NULL."""
+    """Cadence defaults; the fields that carry clinical weight do not."""
 
     async def _run() -> KnowledgeNode:
         async with session_factory() as session:
@@ -218,13 +250,13 @@ def test_traverse_multi_hop_and_direction(session_factory) -> None:
                 return sorted((h.node.title, h.depth) for h in hits)
 
             return {
-                "all_out": _titles(await repo.traverse(g2026.id)),
+                "all_out": _titles(await repo.traverse(g2026.id, edge_type=None)),
                 "typed": _titles(
                     await repo.traverse(
                         g2026.id, edge_type=KnowledgeEdgeType.SUPERSEDES
                     )
                 ),
-                "one_hop": _titles(await repo.traverse(g2026.id, hops=1)),
+                "one_hop": _titles(await repo.traverse(g2026.id, edge_type=None, hops=1)),
                 "incoming": _titles(
                     await repo.traverse(
                         g2019.id,
@@ -234,7 +266,10 @@ def test_traverse_multi_hop_and_direction(session_factory) -> None:
                 ),
                 "both": _titles(
                     await repo.traverse(
-                        g2022.id, direction=TraversalDirection.both, hops=1
+                        g2022.id,
+                        edge_type=None,
+                        direction=TraversalDirection.both,
+                        hops=1,
                     )
                 ),
             }
@@ -275,7 +310,7 @@ def test_traverse_terminates_on_a_cycle(session_factory) -> None:
             await session.commit()
 
             repo = KnowledgeNodeRepository(session)
-            hits = await repo.traverse(a.id, hops=MAX_TRAVERSAL_DEPTH)
+            hits = await repo.traverse(a.id, edge_type=None, hops=MAX_TRAVERSAL_DEPTH)
             return sorted((h.node.title, h.depth) for h in hits)
 
     # The start node is not returned even though an edge points back at it,
@@ -304,7 +339,7 @@ def test_traverse_clamps_depth(session_factory) -> None:
             await session.commit()
 
             repo = KnowledgeNodeRepository(session)
-            hits = await repo.traverse(nodes[0].id, hops=10_000)
+            hits = await repo.traverse(nodes[0].id, edge_type=None, hops=10_000)
             return len(hits)
 
     assert asyncio.run(_run()) == MAX_TRAVERSAL_DEPTH
@@ -332,7 +367,7 @@ def test_traverse_bounds_result_size(session_factory) -> None:
             await session.commit()
 
             repo = KnowledgeNodeRepository(session)
-            hits = await repo.traverse(hub.id, limit=2)
+            hits = await repo.traverse(hub.id, edge_type=None, limit=2)
             return [(h.node.title, h.depth) for h in hits]
 
     hits = asyncio.run(_run())
@@ -366,12 +401,92 @@ def test_traverse_reports_how_each_node_was_reached(session_factory) -> None:
             await session.commit()
 
             repo = KnowledgeNodeRepository(session)
-            return {h.node.title: h.edge_type for h in await repo.traverse(current.id)}
+            hits = await repo.traverse(current.id, edge_type=None)
+            return {h.node.title: h.edge_type for h in hits}
 
     assert asyncio.run(_run()) == {
         "Old": KnowledgeEdgeType.SUPERSEDES,
         "Cited": KnowledgeEdgeType.CITES,
     }
+
+
+def test_supersedes_wins_the_tie_when_two_edges_share_a_pair(session_factory) -> None:
+    """The unique constraint is per (pair, type), so a pair can carry both.
+
+    Reporting the CITES edge and dropping the SUPERSEDES one would tell a
+    caller the node is merely cited when it is actually replaced. Ordering on
+    the enum column would do exactly that on SQLite (alphabetical: CITES first)
+    while doing the opposite on PostgreSQL (declaration order), so the ranking
+    is explicit rather than incidental.
+    """
+
+    async def _run() -> KnowledgeEdgeType:
+        async with session_factory() as session:
+            new, old = _node("Replacement"), _node("Replaced")
+            session.add_all([new, old])
+            await session.flush()
+            session.add_all(
+                [
+                    KnowledgeEdge(
+                        from_node_id=new.id,
+                        to_node_id=old.id,
+                        edge_type=KnowledgeEdgeType.CITES,
+                    ),
+                    KnowledgeEdge(
+                        from_node_id=new.id,
+                        to_node_id=old.id,
+                        edge_type=KnowledgeEdgeType.SUPERSEDES,
+                    ),
+                ]
+            )
+            await session.commit()
+
+            repo = KnowledgeNodeRepository(session)
+            (hit,) = await repo.traverse(new.id, edge_type=None)
+            return hit.edge_type
+
+    assert asyncio.run(_run()) is KnowledgeEdgeType.SUPERSEDES
+
+
+def test_truncation_keeps_supersession_over_citations(session_factory) -> None:
+    """Within a depth, the cut must not be arbitrary.
+
+    A guideline with many citing neighbours and one replacement: truncating to
+    a single hit must keep the replacement, because that is the hit that
+    changes clinical meaning.
+    """
+
+    async def _run() -> list[tuple[str, KnowledgeEdgeType]]:
+        async with session_factory() as session:
+            guideline = _node("Guideline")
+            replacement = _node("Replacement")
+            noise = [_node(f"Citing {i}") for i in range(8)]
+            session.add_all([guideline, replacement, *noise])
+            await session.flush()
+            session.add_all(
+                [
+                    KnowledgeEdge(
+                        from_node_id=guideline.id,
+                        to_node_id=replacement.id,
+                        edge_type=KnowledgeEdgeType.SUPERSEDES,
+                    )
+                ]
+                + [
+                    KnowledgeEdge(
+                        from_node_id=guideline.id,
+                        to_node_id=n.id,
+                        edge_type=KnowledgeEdgeType.CITES,
+                    )
+                    for n in noise
+                ]
+            )
+            await session.commit()
+
+            repo = KnowledgeNodeRepository(session)
+            hits = await repo.traverse(guideline.id, edge_type=None, limit=1)
+            return [(h.node.title, h.edge_type) for h in hits]
+
+    assert asyncio.run(_run()) == [("Replacement", KnowledgeEdgeType.SUPERSEDES)]
 
 
 def test_typed_traversal_survives_unrelated_fan_out(session_factory) -> None:
@@ -409,7 +524,7 @@ def test_typed_traversal_survives_unrelated_fan_out(session_factory) -> None:
             await session.commit()
 
             repo = KnowledgeNodeRepository(session)
-            untyped = await repo.traverse(guideline.id, limit=3)
+            untyped = await repo.traverse(guideline.id, edge_type=None, limit=3)
             typed = await repo.traverse(
                 guideline.id, edge_type=KnowledgeEdgeType.SUPERSEDES, limit=3
             )

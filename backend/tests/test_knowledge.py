@@ -341,6 +341,133 @@ def test_traverse_bounds_result_size(session_factory) -> None:
     assert all(depth == 1 for _, depth in hits)
 
 
+def test_traverse_reports_how_each_node_was_reached(session_factory) -> None:
+    """A supersession notice must be distinguishable from a bare citation."""
+
+    async def _run() -> dict[str, KnowledgeEdgeType]:
+        async with session_factory() as session:
+            current, old, cited = _node("Current"), _node("Old"), _node("Cited")
+            session.add_all([current, old, cited])
+            await session.flush()
+            session.add_all(
+                [
+                    KnowledgeEdge(
+                        from_node_id=current.id,
+                        to_node_id=old.id,
+                        edge_type=KnowledgeEdgeType.SUPERSEDES,
+                    ),
+                    KnowledgeEdge(
+                        from_node_id=current.id,
+                        to_node_id=cited.id,
+                        edge_type=KnowledgeEdgeType.CITES,
+                    ),
+                ]
+            )
+            await session.commit()
+
+            repo = KnowledgeNodeRepository(session)
+            return {h.node.title: h.edge_type for h in await repo.traverse(current.id)}
+
+    assert asyncio.run(_run()) == {
+        "Old": KnowledgeEdgeType.SUPERSEDES,
+        "Cited": KnowledgeEdgeType.CITES,
+    }
+
+
+def test_typed_traversal_survives_unrelated_fan_out(session_factory) -> None:
+    """The safety contract in traverse()'s docstring, exercised.
+
+    An untyped traversal truncated at `limit` can lose a SUPERSEDES hit among
+    citation noise. Asking the database for the edge type instead of filtering
+    afterwards is what makes a supersession check reliable.
+    """
+
+    async def _run() -> tuple[list[str], list[str]]:
+        async with session_factory() as session:
+            guideline = _node("Guideline")
+            replacement = _node("Replacement")
+            noise = [_node(f"Citing {i}") for i in range(8)]
+            session.add_all([guideline, replacement, *noise])
+            await session.flush()
+            session.add_all(
+                [
+                    KnowledgeEdge(
+                        from_node_id=guideline.id,
+                        to_node_id=replacement.id,
+                        edge_type=KnowledgeEdgeType.SUPERSEDES,
+                    )
+                ]
+                + [
+                    KnowledgeEdge(
+                        from_node_id=guideline.id,
+                        to_node_id=n.id,
+                        edge_type=KnowledgeEdgeType.CITES,
+                    )
+                    for n in noise
+                ]
+            )
+            await session.commit()
+
+            repo = KnowledgeNodeRepository(session)
+            untyped = await repo.traverse(guideline.id, limit=3)
+            typed = await repo.traverse(
+                guideline.id, edge_type=KnowledgeEdgeType.SUPERSEDES, limit=3
+            )
+            return (
+                [h.node.title for h in untyped],
+                [h.node.title for h in typed],
+            )
+
+    untyped, typed = asyncio.run(_run())
+    # The untyped call is capped and gives no guarantee the replacement is in it.
+    assert len(untyped) == 3
+    # The typed call cannot be crowded out — the filter runs in the database.
+    assert typed == ["Replacement"]
+
+
+def test_confidence_outside_zero_to_one_is_rejected(session_factory) -> None:
+    """A malfunctioning extractor fails at ingestion, not silently downstream."""
+
+    async def _run() -> tuple[bool, bool]:
+        async with session_factory() as session:
+            a, b = _node("Conf A"), _node("Conf B")
+            session.add_all([a, b])
+            # Commit the nodes first: the rollback below would otherwise discard
+            # them too, and capture the ids before it expires the attributes.
+            await session.commit()
+            a_id, b_id = a.id, b.id
+
+            session.add(
+                KnowledgeEdge(
+                    from_node_id=a_id,
+                    to_node_id=b_id,
+                    edge_type=KnowledgeEdgeType.RELATED_TO,
+                    confidence=1.4,
+                )
+            )
+            rejected = False
+            try:
+                await session.commit()
+            except IntegrityError:
+                rejected = True
+                await session.rollback()
+
+            session.add(
+                KnowledgeEdge(
+                    from_node_id=a_id,
+                    to_node_id=b_id,
+                    edge_type=KnowledgeEdgeType.RELATED_TO,
+                    confidence=0.9,
+                )
+            )
+            await session.commit()
+            return rejected, True
+
+    rejected, in_range_ok = asyncio.run(_run())
+    assert rejected
+    assert in_range_ok
+
+
 def test_edge_list_for_node_is_paged(session_factory) -> None:
     async def _run() -> tuple[int, int]:
         async with session_factory() as session:

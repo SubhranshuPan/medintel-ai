@@ -19,6 +19,7 @@ import uuid
 from datetime import date
 
 from sqlalchemy import (
+    CheckConstraint,
     Date,
     Enum,
     Float,
@@ -101,6 +102,10 @@ class KnowledgeNode(UUIDMixin, TimestampMixin, Base):
         Index("ix_knowledge_nodes_status_source", "status", "source_type"),
         Index("ix_knowledge_nodes_effective_date", "effective_date"),
         Index("ix_knowledge_nodes_external_ref", "external_ref"),
+        # Re-ingestion (#61) reads every node already held for a source
+        # document before deciding what to update. Not unique: one guideline
+        # yields many nodes, all sharing its source_id.
+        Index("ix_knowledge_nodes_source", "source_type", "source_id"),
     )
 
     node_type: Mapped[KnowledgeNodeType] = mapped_column(
@@ -110,8 +115,10 @@ class KnowledgeNode(UUIDMixin, TimestampMixin, Base):
     text: Mapped[str] = mapped_column(Text)
 
     # --- provenance ---
-    # Stable identifier *within* the source (a PMID, a NICE guideline id), so
-    # re-ingestion updates a node instead of duplicating it.
+    # Stable identifier of the *source document* (a PMID, a NICE guideline id).
+    # Shared by every node extracted from that document, so it identifies what
+    # re-ingestion should reconcile against rather than uniquely keying a node —
+    # ``heading_path`` is what distinguishes structural units within a document.
     source_id: Mapped[str] = mapped_column(String(255))
     source_type: Mapped[KnowledgeSourceType] = mapped_column(
         Enum(KnowledgeSourceType, name="knowledge_source_type")
@@ -159,6 +166,13 @@ class KnowledgeEdge(UUIDMixin, TimestampMixin, Base):
         # an unchanged document must not multiply the graph.
         UniqueConstraint(
             "from_node_id", "to_node_id", "edge_type", name="uq_knowledge_edge"
+        ),
+        # An extractor that emits a confidence outside [0, 1] is malfunctioning,
+        # and a malfunctioning extractor should fail at ingestion rather than
+        # quietly poison every downstream ranking that reads the column.
+        CheckConstraint(
+            "confidence IS NULL OR (confidence >= 0 AND confidence <= 1)",
+            name="ck_knowledge_edge_confidence",
         ),
     )
 

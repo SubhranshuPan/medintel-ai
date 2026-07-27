@@ -1,8 +1,8 @@
 """knowledge graph tables
 
-Revision ID: 17e623d408df
+Revision ID: f637464718ce
 Revises: 30d783a96ae4
-Create Date: 2026-07-27 16:24:35.402750
+Create Date: 2026-07-27 17:01:45.951427
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = '17e623d408df'
+revision: str = 'f637464718ce'
 down_revision: Union[str, Sequence[str], None] = '30d783a96ae4'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -41,6 +41,7 @@ def upgrade() -> None:
     )
     op.create_index('ix_knowledge_nodes_effective_date', 'knowledge_nodes', ['effective_date'], unique=False)
     op.create_index('ix_knowledge_nodes_external_ref', 'knowledge_nodes', ['external_ref'], unique=False)
+    op.create_index('ix_knowledge_nodes_source', 'knowledge_nodes', ['source_type', 'source_id'], unique=False)
     op.create_index('ix_knowledge_nodes_status_source', 'knowledge_nodes', ['status', 'source_type'], unique=False)
     op.create_table('knowledge_edges',
     sa.Column('from_node_id', sa.Uuid(), nullable=False),
@@ -51,6 +52,7 @@ def upgrade() -> None:
     sa.Column('id', sa.Uuid(), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.CheckConstraint('confidence IS NULL OR (confidence >= 0 AND confidence <= 1)', name='ck_knowledge_edge_confidence'),
     sa.ForeignKeyConstraint(['from_node_id'], ['knowledge_nodes.id'], ondelete='CASCADE'),
     sa.ForeignKeyConstraint(['to_node_id'], ['knowledge_nodes.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id'),
@@ -82,6 +84,7 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_knowledge_edges_edge_type'), table_name='knowledge_edges')
     op.drop_table('knowledge_edges')
     op.drop_index('ix_knowledge_nodes_status_source', table_name='knowledge_nodes')
+    op.drop_index('ix_knowledge_nodes_source', table_name='knowledge_nodes')
     op.drop_index('ix_knowledge_nodes_external_ref', table_name='knowledge_nodes')
     op.drop_index('ix_knowledge_nodes_effective_date', table_name='knowledge_nodes')
     op.drop_table('knowledge_nodes')

@@ -47,10 +47,17 @@ class TraversalDirection(enum.StrEnum):
 
 
 class TraversalHit(NamedTuple):
-    """A node reached by traversal, with its shortest hop distance."""
+    """A node reached by traversal.
+
+    ``edge_type`` is the type of the edge on the *shortest* path in, so a
+    caller can tell a supersession notice apart from an incidental citation
+    without issuing a second query per hit — a distinction that matters when
+    the result feeds clinical decision support.
+    """
 
     node: KnowledgeNode
     depth: int
+    edge_type: KnowledgeEdgeType
 
 
 def _far_endpoint(
@@ -115,11 +122,24 @@ class KnowledgeNodeRepository(BaseRepository[KnowledgeNode]):
         Bounded on both axes, because the depth cap alone does not bound the
         result *size* — a heavily cited guideline can fan out to thousands of
         nodes within three hops. Truncation is depth-ordered, so what falls off
-        the end is the most distant, least relevant material.
+        the end is the most distant material.
+
+        **A supersession or exception check must pass ``edge_type``.** Within a
+        single depth the cut is arbitrary, so a ``SUPERSEDES`` hit can be
+        truncated away by unrelated ``CITES`` neighbours if you ask for
+        everything and filter afterwards. Asking the database for the edge type
+        you care about is both cheaper and the only version that is safe.
 
         Cycle-safe by construction: a node already on the current path is not
         re-entered, so a looping ``SUPERSEDES`` chain terminates rather than
         hanging.
+
+        Note the ceiling: the visited guard is per *path*, not per node, so a
+        densely connected graph expands every distinct path to a node rather
+        than only the first. Bounded in practice by the corpus size (thousands
+        of nodes, ADR-021) and by ``hops``; if traversal ever becomes the
+        measured bottleneck, per-node pruning during expansion is the upgrade,
+        and a native graph store is the one after that.
         """
         hops = max(1, min(hops, MAX_TRAVERSAL_DEPTH))
 
@@ -133,6 +153,7 @@ class KnowledgeNodeRepository(BaseRepository[KnowledgeNode]):
         base = select(
             first_hop.label("node_id"),
             literal(1).label("depth"),
+            KnowledgeEdge.edge_type.label("edge_type"),
             (
                 _delimited(start_col) + cast(first_hop, String) + literal(_PATH_SEP)
             ).label("path"),
@@ -144,6 +165,7 @@ class KnowledgeNodeRepository(BaseRepository[KnowledgeNode]):
             select(
                 next_id.label("node_id"),
                 (walk.c.depth + 1).label("depth"),
+                KnowledgeEdge.edge_type.label("edge_type"),
                 (walk.c.path + cast(next_id, String) + literal(_PATH_SEP)).label("path"),
             ).where(
                 _typed(_incident(walk.c.node_id, direction)),
@@ -156,19 +178,32 @@ class KnowledgeNodeRepository(BaseRepository[KnowledgeNode]):
             )
         )
 
-        # Several paths can reach the same node; report it once, nearest.
-        shortest = (
-            select(walk.c.node_id, func.min(walk.c.depth).label("depth"))
-            .group_by(walk.c.node_id)
-            .subquery()
-        )
+        # Several paths can reach the same node; report it once, by the
+        # shortest. A window function rather than GROUP BY / MIN, because the
+        # edge type has to survive the dedup alongside the depth.
+        ranked = select(
+            walk.c.node_id,
+            walk.c.depth,
+            walk.c.edge_type,
+            func.row_number()
+            .over(
+                partition_by=walk.c.node_id,
+                order_by=(walk.c.depth, walk.c.edge_type),
+            )
+            .label("rank"),
+        ).subquery()
+        shortest = select(ranked).where(ranked.c.rank == 1).subquery()
+
         result = await self.session.execute(
-            select(KnowledgeNode, shortest.c.depth)
+            select(KnowledgeNode, shortest.c.depth, shortest.c.edge_type)
             .join(shortest, KnowledgeNode.id == shortest.c.node_id)
             .order_by(shortest.c.depth, KnowledgeNode.id)
             .limit(limit)
         )
-        return [TraversalHit(node=node, depth=depth) for node, depth in result.all()]
+        return [
+            TraversalHit(node=node, depth=depth, edge_type=KnowledgeEdgeType(edge_type))
+            for node, depth, edge_type in result.all()
+        ]
 
 
 class KnowledgeEdgeRepository(BaseRepository[KnowledgeEdge]):

@@ -310,6 +310,64 @@ def test_traverse_clamps_depth(session_factory) -> None:
     assert asyncio.run(_run()) == MAX_TRAVERSAL_DEPTH
 
 
+def test_traverse_bounds_result_size(session_factory) -> None:
+    """Depth alone does not bound size — a hub fans out within one hop."""
+
+    async def _run() -> list[tuple[str, int]]:
+        async with session_factory() as session:
+            hub = _node("Hub")
+            spokes = [_node(f"Spoke {i}") for i in range(6)]
+            session.add_all([hub, *spokes])
+            await session.flush()
+            session.add_all(
+                [
+                    KnowledgeEdge(
+                        from_node_id=hub.id,
+                        to_node_id=spoke.id,
+                        edge_type=KnowledgeEdgeType.CITES,
+                    )
+                    for spoke in spokes
+                ]
+            )
+            await session.commit()
+
+            repo = KnowledgeNodeRepository(session)
+            hits = await repo.traverse(hub.id, limit=2)
+            return [(h.node.title, h.depth) for h in hits]
+
+    hits = asyncio.run(_run())
+    assert len(hits) == 2
+    # Truncation is depth-ordered, so what survives is the nearest material.
+    assert all(depth == 1 for _, depth in hits)
+
+
+def test_edge_list_for_node_is_paged(session_factory) -> None:
+    async def _run() -> tuple[int, int]:
+        async with session_factory() as session:
+            hub = _node("Paged hub")
+            others = [_node(f"Other {i}") for i in range(5)]
+            session.add_all([hub, *others])
+            await session.flush()
+            session.add_all(
+                [
+                    KnowledgeEdge(
+                        from_node_id=hub.id,
+                        to_node_id=other.id,
+                        edge_type=KnowledgeEdgeType.CITES,
+                    )
+                    for other in others
+                ]
+            )
+            await session.commit()
+
+            repo = KnowledgeEdgeRepository(session)
+            page = await repo.list_for_node(hub.id, limit=2)
+            tail = await repo.list_for_node(hub.id, limit=10, offset=4)
+            return len(page), len(tail)
+
+    assert asyncio.run(_run()) == (2, 1)
+
+
 def test_edge_repository_list_for_node(session_factory) -> None:
     async def _run() -> tuple[int, int, int]:
         async with session_factory() as session:

@@ -29,6 +29,10 @@ DEFAULT_TRAVERSAL_DEPTH = 3
 #: LLM output, so it is clamped rather than trusted.
 MAX_TRAVERSAL_DEPTH = 10
 
+#: Nodes returned by one traversal unless the caller says otherwise. Results are
+#: depth-ordered, so truncation drops the most distant nodes first.
+DEFAULT_TRAVERSAL_LIMIT = 200
+
 #: Separator around every id in the visited-path string, so a substring test
 #: cannot match a partial id.
 _PATH_SEP = "/"
@@ -49,6 +53,45 @@ class TraversalHit(NamedTuple):
     depth: int
 
 
+def _far_endpoint(
+    arrived_at: ColumnElement[UUID], direction: TraversalDirection
+) -> ColumnElement[UUID]:
+    """The endpoint of an edge opposite the one we arrived at."""
+    if direction is TraversalDirection.outgoing:
+        return KnowledgeEdge.to_node_id
+    if direction is TraversalDirection.incoming:
+        return KnowledgeEdge.from_node_id
+    return func.coalesce(
+        # ``both``: whichever endpoint is not the one we came from.
+        func.nullif(KnowledgeEdge.to_node_id, arrived_at),
+        KnowledgeEdge.from_node_id,
+    )
+
+
+def _incident(
+    node: ColumnElement[UUID] | UUID, direction: TraversalDirection
+) -> ColumnElement[bool]:
+    """Edges touching ``node`` in the requested direction."""
+    if direction is TraversalDirection.outgoing:
+        return KnowledgeEdge.from_node_id == node
+    if direction is TraversalDirection.incoming:
+        return KnowledgeEdge.to_node_id == node
+    return or_(
+        KnowledgeEdge.from_node_id == node,
+        KnowledgeEdge.to_node_id == node,
+    )
+
+
+def _delimited(node: ColumnElement[UUID]) -> ColumnElement[str]:
+    """``node``'s id wrapped in separators, as it appears in a visited path.
+
+    Cast rather than formatted from the Python UUID: SQLite stores UUIDs as
+    undashed hex and PostgreSQL as dashed text, so an f-string built from the
+    Python value would only match on one of the two dialects.
+    """
+    return literal(_PATH_SEP) + cast(node, String) + literal(_PATH_SEP)
+
+
 class KnowledgeNodeRepository(BaseRepository[KnowledgeNode]):
     """CRUD for :class:`KnowledgeNode`, plus bounded graph traversal."""
 
@@ -61,6 +104,7 @@ class KnowledgeNodeRepository(BaseRepository[KnowledgeNode]):
         edge_type: KnowledgeEdgeType | None = None,
         hops: int = DEFAULT_TRAVERSAL_DEPTH,
         direction: TraversalDirection = TraversalDirection.outgoing,
+        limit: int = DEFAULT_TRAVERSAL_LIMIT,
     ) -> list[TraversalHit]:
         """Nodes reachable from ``node_id``, nearest first.
 
@@ -68,74 +112,47 @@ class KnowledgeNodeRepository(BaseRepository[KnowledgeNode]):
         ``[1, MAX_TRAVERSAL_DEPTH]``. The start node is never returned, and a
         node reachable by several paths is returned once, at its shortest depth.
 
+        Bounded on both axes, because the depth cap alone does not bound the
+        result *size* — a heavily cited guideline can fan out to thousands of
+        nodes within three hops. Truncation is depth-ordered, so what falls off
+        the end is the most distant, least relevant material.
+
         Cycle-safe by construction: a node already on the current path is not
         re-entered, so a looping ``SUPERSEDES`` chain terminates rather than
         hanging.
         """
         hops = max(1, min(hops, MAX_TRAVERSAL_DEPTH))
 
-        def _next_node(current: ColumnElement[UUID]) -> ColumnElement[UUID]:
-            """The far endpoint of an edge, given the endpoint we arrived at."""
-            if direction is TraversalDirection.outgoing:
-                return KnowledgeEdge.to_node_id
-            if direction is TraversalDirection.incoming:
-                return KnowledgeEdge.from_node_id
-            return func.coalesce(
-                # ``both``: whichever endpoint is not the one we came from.
-                func.nullif(KnowledgeEdge.to_node_id, current),
-                KnowledgeEdge.from_node_id,
-            )
-
-        def _match(current: ColumnElement[UUID]) -> ColumnElement[bool]:
-            """Edges incident on ``current`` in the requested direction."""
-            if direction is TraversalDirection.outgoing:
-                return KnowledgeEdge.from_node_id == current
-            if direction is TraversalDirection.incoming:
-                return KnowledgeEdge.to_node_id == current
-            return or_(
-                KnowledgeEdge.from_node_id == current,
-                KnowledgeEdge.to_node_id == current,
-            )
-
         def _typed(clause: ColumnElement[bool]) -> ColumnElement[bool]:
             if edge_type is None:
                 return clause
             return clause & (KnowledgeEdge.edge_type == edge_type)
 
-        def _visited(node: ColumnElement[UUID]) -> ColumnElement[str]:
-            """``node``'s id wrapped in separators, as it appears in a path.
-
-            Cast rather than formatted from the Python UUID: SQLite stores UUIDs
-            as undashed hex and PostgreSQL as dashed text, so a formatted
-            f-string would only match on one of the two dialects.
-            """
-            return literal(_PATH_SEP) + cast(node, String) + literal(_PATH_SEP)
-
         start_col = literal(node_id)
-        first_hop = _next_node(start_col)
+        first_hop = _far_endpoint(start_col, direction)
         base = select(
             first_hop.label("node_id"),
             literal(1).label("depth"),
-            (_visited(start_col) + cast(first_hop, String) + literal(_PATH_SEP)).label(
-                "path"
-            ),
-        ).where(_typed(_match(start_col)))
+            (
+                _delimited(start_col) + cast(first_hop, String) + literal(_PATH_SEP)
+            ).label("path"),
+        ).where(_typed(_incident(start_col, direction)))
 
         walk = base.cte("knowledge_traverse", recursive=True)
-        next_id = _next_node(walk.c.node_id)
+        next_id = _far_endpoint(walk.c.node_id, direction)
         walk = walk.union_all(
             select(
                 next_id.label("node_id"),
                 (walk.c.depth + 1).label("depth"),
                 (walk.c.path + cast(next_id, String) + literal(_PATH_SEP)).label("path"),
             ).where(
-                _typed(_match(walk.c.node_id)),
+                _typed(_incident(walk.c.node_id, direction)),
                 walk.c.depth < hops,
                 # Visited-set guard. The path carries every id seen so far, each
                 # delimited on both sides, so this rejects a revisit — including
                 # a return to the start node — without needing an array type
                 # (SQLite runs the test suite) or PostgreSQL's CYCLE clause.
-                ~walk.c.path.contains(_visited(next_id)),
+                ~walk.c.path.contains(_delimited(next_id)),
             )
         )
 
@@ -149,6 +166,7 @@ class KnowledgeNodeRepository(BaseRepository[KnowledgeNode]):
             select(KnowledgeNode, shortest.c.depth)
             .join(shortest, KnowledgeNode.id == shortest.c.node_id)
             .order_by(shortest.c.depth, KnowledgeNode.id)
+            .limit(limit)
         )
         return [TraversalHit(node=node, depth=depth) for node, depth in result.all()]
 
@@ -169,19 +187,18 @@ class KnowledgeEdgeRepository(BaseRepository[KnowledgeEdge]):
         *,
         direction: TraversalDirection = TraversalDirection.outgoing,
         edge_type: KnowledgeEdgeType | None = None,
+        limit: int = 100,
+        offset: int = 0,
     ) -> list[KnowledgeEdge]:
-        """Edges incident on ``node_id`` (one hop, unlike ``traverse``)."""
-        if direction is TraversalDirection.outgoing:
-            clause = KnowledgeEdge.from_node_id == node_id
-        elif direction is TraversalDirection.incoming:
-            clause = KnowledgeEdge.to_node_id == node_id
-        else:
-            clause = or_(
-                KnowledgeEdge.from_node_id == node_id,
-                KnowledgeEdge.to_node_id == node_id,
-            )
-        stmt = select(KnowledgeEdge).where(clause)
+        """Edges incident on ``node_id`` (one hop, unlike ``traverse``).
+
+        Paged like every other repository read (``BaseRepository.list``): a
+        heavily cited node has an unbounded number of incident edges.
+        """
+        stmt = select(KnowledgeEdge).where(_incident(node_id, direction))
         if edge_type is not None:
             stmt = stmt.where(KnowledgeEdge.edge_type == edge_type)
-        result = await self.session.execute(stmt.order_by(KnowledgeEdge.created_at))
+        result = await self.session.execute(
+            stmt.order_by(KnowledgeEdge.created_at).limit(limit).offset(offset)
+        )
         return list(result.scalars().all())

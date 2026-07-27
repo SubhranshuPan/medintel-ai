@@ -2,6 +2,11 @@
 
 The vector itself lives in Qdrant (ADR-004); this row stores the chunk text and
 a reference to the Qdrant point so relational and vector stores stay in sync.
+
+Since ADR-021 the row is also the join between a retrieval chunk and the
+knowledge graph: ``node_id`` points at the ``KnowledgeNode`` the chunk realises,
+so a vector hit can be resolved to typed, provenanced knowledge rather than
+returned as bare text.
 """
 
 import uuid

@@ -12,6 +12,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 # Dev-only placeholder; the settings validator refuses it outside dev/test.
 PLACEHOLDER_JWT_SECRET = "dev-insecure-change-me"
 
+# The only environments allowed to run on the placeholder secret. Anything else
+# — including an unset or misspelled MEDINTEL_ENVIRONMENT — must supply a real one.
+_LOCAL_ENVIRONMENTS = frozenset({"development", "test"})
+
 
 class Settings(BaseSettings):
     """Application settings.
@@ -28,7 +32,9 @@ class Settings(BaseSettings):
     )
 
     app_name: str = "MedIntel AI"
-    environment: str = "development"
+    # Not defaulted to a local environment: an unset MEDINTEL_ENVIRONMENT must
+    # not be what decides whether the placeholder JWT secret is acceptable.
+    environment: str = "production"
     version: str = "0.1.0"
     # Vite's dev server (frontend/vite.config.ts) — not CRA's port 3000.
     cors_origins: list[str] = ["http://localhost:5173"]
@@ -52,12 +58,11 @@ class Settings(BaseSettings):
     def _validate_jwt_secret(self) -> "Settings":
         """Reject the placeholder or a weak secret outside development/test.
 
-        NOTE: ``environment`` defaults to ``development``, so a deployment that
-        forgets to set ``MEDINTEL_ENVIRONMENT`` will not trip this guard —
-        deployments MUST set both ``MEDINTEL_ENVIRONMENT`` and a strong
-        ``MEDINTEL_JWT_SECRET`` (see .env.example).
+        Fails closed: an unrecognised ``environment`` is treated as non-dev, so
+        a typo (``prod`` for ``production``) still demands a strong secret. Only
+        the two named local environments are exempt.
         """
-        if self.environment in {"development", "test"}:
+        if self.environment in _LOCAL_ENVIRONMENTS:
             return self
         if self.jwt_secret == PLACEHOLDER_JWT_SECRET or len(self.jwt_secret) < 32:
             raise ValueError(

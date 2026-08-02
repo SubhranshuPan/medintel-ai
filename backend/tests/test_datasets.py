@@ -10,6 +10,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
 from app.api.deps import get_object_store
+from app.core.config import get_settings
 from app.models.audit import AuditLog
 from app.models.dataset import Dataset, DatasetVersion, ValidationStatus, VersionOrigin
 from app.models.user import User, UserRole
@@ -154,6 +155,18 @@ def test_upload_rejects_non_csv(client: TestClient, tmp_path) -> None:
     resp = _upload(client, token, filename="cohort.txt", content_type="text/plain")
 
     assert resp.status_code == 415
+
+
+def test_upload_rejects_oversized_file(client: TestClient, tmp_path, monkeypatch) -> None:
+    _override_store(client, tmp_path)
+    token = _register_and_login(client, "big@nhs.uk")
+    monkeypatch.setattr(get_settings(), "max_upload_bytes", 1024)
+
+    resp = _upload(client, token, content=b"patient_id,age\n" + b"p1,40\n" * 1000)
+
+    assert resp.status_code == 413
+    # Rejected before any artifact was written.
+    assert not list((tmp_path / "store").rglob("*"))
 
 
 def test_upload_rejects_malformed_csv(client: TestClient, tmp_path) -> None:

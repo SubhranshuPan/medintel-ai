@@ -12,9 +12,14 @@ monolith, repository/service pattern (see `docs/architecture/adr/` and
 ## Quickstart
 ```bash
 uv sync                 # create venv + install deps
-cp .env.example .env    # optional; sensible defaults exist
+cp .env.example .env    # required: sets MEDINTEL_ENVIRONMENT=development
 uv run uvicorn app.main:app --reload
 ```
+Without `MEDINTEL_ENVIRONMENT=development` (or `test`) the app starts as if in
+production and refuses to boot on the placeholder JWT secret — deliberate, so a
+deployment that forgets the variable fails instead of signing tokens with a
+public secret.
+
 API: http://localhost:8000 · Docs: http://localhost:8000/docs
 Health: http://localhost:8000/api/v1/health
 

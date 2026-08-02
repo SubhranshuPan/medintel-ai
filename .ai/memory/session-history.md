@@ -5,6 +5,49 @@
 
 ---
 
+## 2026-08-02 — Security audit of `develop`; the now-fixable findings fixed
+
+**Agent:** Devin
+**Branch:** `fix/security-hardening-develop` → PR (open)
+**Issues:** closes #26
+
+**Did:** audited `develop` (auth, RBAC, upload path, object store, audit
+middleware, CORS, compose, OSV across all 48 backend deps, `npm audit`). Fixed
+only the findings that stand on their own today — the rest are recorded below
+against the sprint that owns them.
+
+- **Upload DoS.** `POST /api/v1/datasets` did `await file.read()` *before*
+  comparing against `max_upload_bytes`, so an oversized body was buffered in
+  full and only then rejected. Now read in 1 MB chunks and aborted the moment
+  the cap is passed. `Content-Length` is deliberately not trusted — a chunked
+  request need not send one.
+- **#26 `python-jose` → `PyJWT`.** The only OSV hit in the backend tree was
+  `ecdsa` 0.19.2 (CVE-2024-23342, Minerva timing attack, **no fix released**),
+  reachable solely as a `python-jose` dependency. We sign HMAC, so the whole
+  ECDSA path was dead weight. `pyasn1`/`rsa`/`pycparser` dropped with it.
+- **Config now fails closed.** `environment` defaulted to `development`, which
+  meant a deployment that forgot `MEDINTEL_ENVIRONMENT` skipped the JWT-secret
+  strength check entirely and happily signed tokens with the public placeholder.
+  It now defaults to `production`; only `development`/`test` are exempt, so a
+  typo like `develop` is refused too. `tests/__init__.py` sets the suite's
+  environment before `app` is imported.
+- **`postcss`** path-traversal advisory cleared via `npm audit fix`; root
+  `.gitignore` gained an `.env` rule (only `backend/` and `frontend/` had one).
+
+**Deliberately not fixed (owned by later work):** rate limiting on
+`/auth/login` (#24) and security headers/HSTS-CSP belong with the Sprint 5
+deploy (both want the edge/Redis that doesn't exist yet); #25's registration
+409 enumeration changes a contract the Sprint 4 auth UI consumes; the
+`localStorage` token is an ADR decision, not a patch. `react-router` 7.18.1
+matches GHSA-qwww-vcr4-c8h2, but that advisory is RSC-mode only and this app is
+a declarative `BrowserRouter` SPA — the v8 major belongs with Sprint 4
+frontend work, not here.
+
+**Still open for Som:** the GitHub MCP personal access token sitting in
+plaintext in `~/.claude.json` (flagged 2026-07-25) has not been rotated.
+
+---
+
 ## 2026-07-27 — Sprint 3 opens: ADR-021/022 accepted, knowledge graph storage landed
 
 **Agent:** Claude Code (Opus 5)

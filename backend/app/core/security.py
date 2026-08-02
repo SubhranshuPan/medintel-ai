@@ -1,13 +1,14 @@
 """Password hashing and JWT issue/verify.
 
 Single home for credential crypto so no other module reaches for passlib or
-jose directly. Never log the plaintext password, hash, or token from here.
+PyJWT directly. Never log the plaintext password, hash, or token from here.
 """
 
 from datetime import UTC, datetime, timedelta
 
 import bcrypt
-from jose import JWTError, jwt
+import jwt
+from jwt import PyJWTError
 
 from app.core.config import get_settings
 
@@ -50,5 +51,5 @@ def decode_access_token(token: str) -> dict | None:
     settings = get_settings()
     try:
         return jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
-    except JWTError:
+    except PyJWTError:
         return None

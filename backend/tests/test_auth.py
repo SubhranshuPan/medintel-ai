@@ -3,8 +3,8 @@
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 
+import jwt
 from fastapi.testclient import TestClient
-from jose import jwt
 
 from app.core.config import get_settings
 from app.models.user import User, UserRole

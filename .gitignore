@@ -4,6 +4,12 @@
 # Tracked so a fresh clone has them without re-copying from a local plugin cache.
 !.claude/agents/
 
+# Environment files anywhere in the tree. backend/ and frontend/ ignore their
+# own, but a stray root-level .env was previously committable.
+.env
+.env.*
+!.env.example
+
 # Root-level Obsidian vault (local editor state, not project code)
 .obsidian/
 

@@ -39,6 +39,30 @@ _ALLOWED_CONTENT_TYPES = {
     "application/octet-stream",
 }
 
+_UPLOAD_CHUNK_BYTES = 1024 * 1024
+
+
+async def _read_capped(file: UploadFile, limit: int) -> bytes:
+    """Read ``file`` in chunks, aborting as soon as ``limit`` bytes are exceeded.
+
+    A single ``await file.read()`` buffers the whole body before any size check,
+    so an oversized upload costs the full memory/disk of the payload even though
+    it is rejected afterwards. Reading incrementally caps the cost at the limit
+    plus one chunk. ``Content-Length`` is not trusted — a chunked request need
+    not send one, and a client-supplied length is not evidence of body size.
+    """
+    chunks: list[bytes] = []
+    total = 0
+    while chunk := await file.read(_UPLOAD_CHUNK_BYTES):
+        total += len(chunk)
+        if total > limit:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail="File exceeds the upload size limit",
+            )
+        chunks.append(chunk)
+    return b"".join(chunks)
+
 
 def _service(db: AsyncSession, store: ObjectStore) -> DatasetService:
     return DatasetService(
@@ -69,7 +93,7 @@ async def upload_dataset(
             detail="Only .csv files are accepted",
         )
 
-    content = await file.read()
+    content = await _read_capped(file, get_settings().max_upload_bytes)
     try:
         dataset, version = await _service(db, store).create_from_upload(
             name=name,

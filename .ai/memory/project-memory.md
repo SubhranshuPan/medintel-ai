@@ -137,6 +137,19 @@
   provenance and refresh steps are in `.claude/agents/README.md`. The rest of
   `.claude/` (`launch.json`, `settings.local.json`, `commands/`) stays
   machine-local.
+- **graphify knowledge graph is a context-budget tool, not project
+  architecture (2026-08-05):** `graphifyy` builds a tree-sitter/LLM knowledge
+  graph of this repo into `graphify-out/`, so an agent can answer "how does X
+  work" with `graphify query` instead of reading files. It exists purely to cut
+  per-session token cost — it is **not** part of the Sprint 3 knowledge layer
+  and must not be confused with it. ADR-021's graph is a PostgreSQL clinical
+  knowledge store of guideline entities, versioned, superseded, and served to
+  patients; graphify's graph is a throwaway map of source code. Neither reads
+  the other. `graphify-out/` is gitignored and rebuilt on demand
+  (`graphify update .`, AST-only, no API cost); the `CLAUDE.md` graphify
+  section is tracked, but the PreToolUse hook lives in `.claude/settings.json`
+  and is therefore machine-local — a fresh clone gets the instructions, not
+  the hook.
 
 ---
 

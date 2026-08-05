@@ -90,16 +90,24 @@ matter for a specific task.
   directory carries a SID from a different account than the one the agent
   shell runs as). Resolved with
   `git config --global --add safe.directory D:/AI-Portfolio/medintel-ai`.
-- `gh` is not installed on this machine, so the PR could not be opened from
-  the CLI despite the branch policy naming `gh` as the path for git writes.
+- `gh` was not installed on this machine, so the PR could not initially be
+  opened from the CLI despite the branch policy naming `gh` as the path for git
+  writes. Installed via `winget install --id GitHub.cli` (2.97.0); Som ran
+  `gh auth login` interactively, since the device-code flow cannot run in a
+  non-interactive agent shell.
 
-**Cost note:** the graph was not built in this session. `/graphify .` profiles
-this repo at 189 files / ~108k words (95 code, 94 docs). Code is AST-extracted
-for free; the 94 markdown files dispatch ~4–5 semantic subagents once, then
-cache. `graphify update .` afterwards is AST-only and free.
+**Graph build:** built this session. 1088 nodes / 2144 edges / 80 communities
+across 166 stamped files. Code (95 files) came from the free local tree-sitter
+AST pass; the semantic layer covers `docs/` and the ADRs. **`.ai/` was
+deliberately excluded** — session logs and memory files are bookkeeping, not
+architecture, and `session-history.md` is the single largest file in the
+corpus. Those 24 files are left unstamped in `manifest.json`, so a later
+`graphify update .` re-queues them if we ever decide they're worth the tokens.
+Graph health: 258 dangling-endpoint edges (expected — edges pointing at the
+excluded `.ai/` nodes and at external symbols the AST pass can't resolve).
 
-**Next:** run `/graphify .` in a restarted session (skills load at startup, so
-the command is not available in the session that installed it).
+**Next:** `graphify query "<question>"` before grep/raw reads; `graphify update
+.` after code changes (AST-only, free).
 
 ---
 

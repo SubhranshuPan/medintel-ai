@@ -25,3 +25,8 @@
 # Uploaded dataset objects. backend/.gitignore already covers the Docker layout
 # (cwd=/app); running uvicorn locally from the repo root puts them here instead.
 /storage/
+
+# graphify knowledge-graph artifacts (graph.json, GRAPH_REPORT.md, graph.html,
+# SHA256 extraction cache). Machine-local and rebuilt on demand via `graphify
+# update .` — see the graphify section in CLAUDE.md.
+graphify-out/

@@ -5,6 +5,104 @@
 
 ---
 
+## 2026-08-05 (later) — Missing-skills audit: plugin/marketplace state was reset, `ponytail` + `document-skills` re-added
+
+**Agent:** Claude Code (Sonnet 5)
+**Branch:** work sits uncommitted in the working tree; lands via a fresh
+branch + PR, not committed straight to `develop`.
+**Issues:** none — tooling/config only, no sprint scope touched
+
+**Did:**
+- Audited the local Claude Code plugin state against `CLAUDE.md`'s
+  "Connectors and Skills" table. Found `known_marketplaces.json` held only
+  `claude-plugins-official`, registered today — the machine's plugin state had
+  been reset, and several plugins the table names (`engineering`,
+  `ui-ux-pro-max`, `ponytail`, `caveman`, `playwright-skill`,
+  `anthropic-skills`) weren't in any registered marketplace. Traced this to
+  the 2026-07-25 `ecc` disablement (67 agents/277 skills) documented further
+  down this log — those plugins were casualties of that reset, not a
+  deliberate cut of this table.
+- Confirmed `dataviz`, `artifact-design`/`-diagramming`/`-capabilities`,
+  `claude-api`, `review`, `security-review`, `run`, `init` etc. are native
+  Cowork/Claude Code skills, not plugins — no install needed, they were never
+  actually missing.
+- Som supplied source repos for the four ECC-era plugins. Registered two new
+  marketplaces (`claude plugin marketplace add`) and installed, user scope:
+  `ponytail@ponytail` (`github.com/dietrichgebert/ponytail`) and
+  `document-skills@anthropic-agent-skills` (`github.com/anthropics/skills` —
+  this is the actual plugin name for what the table called
+  `anthropic-skills`; bundles `docx`/`pdf`/`xlsx`/`pptx`).
+- **Deferred, per Som:** `ui-ux-pro-max`
+  (`github.com/nextlevelbuilder/ui-ux-pro-max-skill`) and `caveman`
+  (`github.com/juliusbrussee/caveman`) — sources now known and recorded in
+  `CLAUDE.md`, not installed.
+- **Still unresolved:** `engineering` and `playwright-skill` — nobody could
+  identify their original source. `CLAUDE.md` now flags both explicitly
+  instead of listing them as if still active; the official Microsoft
+  `playwright` plugin in `claude-plugins-official` is noted as a likely
+  substitute for E2E work if needed before the source turns up.
+- **Flagged, not fixed:** `supermemory@supermemory-plugins` is still `true` in
+  the global `~/.claude/settings.json` but that marketplace isn't registered
+  post-reset — dangling reference. `claude-md-management` is available in
+  `claude-plugins-official` but wasn't installed (nobody asked for it this
+  round).
+- Rewrote `CLAUDE.md`'s plugin table with a `Source` column so future audits
+  don't have to redo this archaeology.
+
+**Next:** Som to decide on `supermemory` (re-add the marketplace or drop the
+setting) and on `engineering`/`playwright-skill` if their loss turns out to
+matter for a specific task.
+
+---
+
+## 2026-08-05 — graphify wired in as a per-session context-budget tool
+
+**Agent:** Claude Code (Opus 5)
+**Branch:** `chore/graphify-integration` → PR pending
+**Issues:** none — tooling only, no sprint scope touched
+
+**Did:**
+- Installed `graphifyy` 0.9.33 (CLI: `graphify`) and its global skill at
+  `~/.claude/skills/graphify/`. It parses code locally with tree-sitter and
+  builds a queryable knowledge graph, so codebase questions can be answered
+  from `graphify query` rather than by reading files into context.
+- `.gitignore` — added `graphify-out/`. The graph, report, HTML viz and SHA256
+  cache are machine-local and rebuilt on demand.
+- `CLAUDE.md` — appended a `## graphify` section (written by
+  `graphify claude install`) instructing agents to query the graph before
+  falling back to grep or raw reads, and to run `graphify update .` after code
+  changes.
+- `.claude/settings.json` — the same installer registered PreToolUse
+  hook-guards on `Bash|Grep` and `Read|Glob`. This file is covered by
+  `.gitignore`'s `.claude/*`, so **the hook is machine-local and does not ship
+  with the repo**; only the `CLAUDE.md` instructions do.
+
+**Worth remembering (Windows-specific, the documented install is not enough):**
+- pip put `graphify.exe` in `%APPDATA%\Python\Python314\Scripts`, which was not
+  on `PATH`. Appended it to the user `PATH`.
+- The skill's bash steps invoke `python3`, which on this machine resolved to
+  the Microsoft Store stub — every step would have failed, and the skill's own
+  fallback re-resolves to that same stub. Fixed by copying `python.exe` to
+  `python3.exe` in the Python 3.14 directory. The skill's other fallback (read
+  the shebang from the `graphify` binary) cannot work on Windows either, since
+  the entry point is a `.exe`.
+- `git` refused to operate in this checkout (`dubious ownership` — the repo
+  directory carries a SID from a different account than the one the agent
+  shell runs as). Resolved with
+  `git config --global --add safe.directory D:/AI-Portfolio/medintel-ai`.
+- `gh` is not installed on this machine, so the PR could not be opened from
+  the CLI despite the branch policy naming `gh` as the path for git writes.
+
+**Cost note:** the graph was not built in this session. `/graphify .` profiles
+this repo at 189 files / ~108k words (95 code, 94 docs). Code is AST-extracted
+for free; the 94 markdown files dispatch ~4–5 semantic subagents once, then
+cache. `graphify update .` afterwards is AST-only and free.
+
+**Next:** run `/graphify .` in a restarted session (skills load at startup, so
+the command is not available in the session that installed it).
+
+---
+
 ## 2026-08-02 — Security audit of `develop`; the now-fixable findings fixed
 
 **Agent:** Devin

@@ -86,27 +86,31 @@ Handle these tasks immediately without suggesting Opus:
 
 Plugins are referenced at the plugin level, not per individual skill — pull whichever skill/agent/command inside the plugin fits the moment.
 
-| Plugin | Use for |
-|---|---|
-| `engineering` | Core SDLC skills: architecture/ADRs, system-design, code-review, debug, testing-strategy, deploy-checklist, incident-response, tech-debt, documentation, standup |
-| Project reviewer agents (`.claude/agents/`) | **The `ecc` plugin was disabled 2026-07-25** (67 agents + 277 skills of context overhead for the eight agents we actually use). Those eight were vendored into `.claude/agents/` and are invoked by bare name via the Agent tool — no `ecc:` prefix: `code-reviewer`, `fastapi-reviewer`, `react-reviewer`, `python-reviewer`, `database-reviewer` (PostgreSQL/migrations), `healthcare-reviewer` (clinical safety/PHI), `security-reviewer`, `mle-reviewer` (MLOps). These are tracked in git (`.gitignore` re-includes `.claude/agents/`), so a fresh clone has them — see `.claude/agents/README.md` for the per-agent table and refresh procedure. |
-| `code-review` (top-level) | Quick `/code-review` on a PR/diff outside the `ecc` marketplace flow |
-| `ui-ux-pro-max` | Frontend design system work — styles, color palettes, font pairings, component patterns for the dataset UI, clinical dashboard, and future patient-facing screens |
-| `frontend-design` | General frontend implementation guidance, complements `ui-ux-pro-max` |
-| `dataviz` | Chart/graph/dashboard design — directly relevant to the clinical analytics dashboard pillar and SHAP explainability visualizations |
-| `frontend-animation-libs` (project skill, `.claude/skills/`) | Animate UI, Lenis, Aceternity UI — the approved third-party libraries for frontend component polish/scroll/motion. Check this before hand-rolling animation on any `frontend/` page. |
-| `playwright-skill` | Browser-driven E2E testing for the React frontend |
-| `ponytail` | Default lazy-but-correct coding discipline (YAGNI, reuse before build, shortest safe diff) — applies to all code changes in this repo |
-| `caveman` | Terse chat/response style — does not apply to code, commits, or PR bodies, which stay normal prose |
-| `superpowers` | Process skills — brainstorming before new features, systematic-debugging before bug fixes, TDD, writing/executing plans |
-| `claude-code-setup` | `claude-automation-recommender` — surfaces hooks/automation opportunities for this repo's workflow |
-| `claude-md-management` | Keeping this file itself current as the project evolves |
-| `anthropic-skills` | `docx`/`pdf`/`xlsx` for reports, resumes, or data exports as deliverables |
+**2026-08-05 note:** the local plugin/marketplace state was reset (only `claude-plugins-official` was a registered marketplace as of that date). `engineering` and the ECC-sourced skills below were casualties of the same 2026-07-25 `ecc` disablement documented in the reviewer-agents row — they weren't part of a clean, deliberate cut of *this* table, just an artifact of it. Re-added what was worth re-adding; the rest is flagged rather than silently dropped, per the project's binding scope mandate.
+
+| Plugin | Source | Use for |
+|---|---|---|
+| Project reviewer agents (`.claude/agents/`) | vendored, tracked in git | **The `ecc` plugin was disabled 2026-07-25** (67 agents + 277 skills of context overhead for the eight agents we actually use). Those eight were vendored into `.claude/agents/` and are invoked by bare name via the Agent tool — no `ecc:` prefix: `code-reviewer`, `fastapi-reviewer`, `react-reviewer`, `python-reviewer`, `database-reviewer` (PostgreSQL/migrations), `healthcare-reviewer` (clinical safety/PHI), `security-reviewer`, `mle-reviewer` (MLOps). See `.claude/agents/README.md` for the per-agent table and refresh procedure. |
+| `code-review` (top-level) | `claude-plugins-official`, installed | Quick `/code-review` on a PR/diff outside the `ecc` marketplace flow |
+| `frontend-design` | `claude-plugins-official`, installed | General frontend implementation guidance |
+| `dataviz` | built-in (not a plugin) | Chart/graph/dashboard design — directly relevant to the clinical analytics dashboard pillar and SHAP explainability visualizations |
+| `frontend-animation-libs` (project skill, `.claude/skills/`) | vendored, tracked in git | Animate UI, Lenis, Aceternity UI — the approved third-party libraries for frontend component polish/scroll/motion. Check this before hand-rolling animation on any `frontend/` page. |
+| `ponytail` | `github.com/dietrichgebert/ponytail`, installed 2026-08-05 (user scope) | Default lazy-but-correct coding discipline (YAGNI, reuse before build, shortest safe diff) — applies to all code changes in this repo |
+| `document-skills` (was listed as `anthropic-skills`) | `github.com/anthropics/skills`, installed 2026-08-05 (user scope) | `docx`/`pdf`/`xlsx`/`pptx` for reports, resumes, or data exports as deliverables |
+| `superpowers` | `claude-plugins-official`, installed | Process skills — brainstorming before new features, systematic-debugging before bug fixes, TDD, writing/executing plans |
+| `claude-code-setup` | `claude-plugins-official`, installed | `claude-automation-recommender` — surfaces hooks/automation opportunities for this repo's workflow |
+| `ui-ux-pro-max` | `github.com/nextlevelbuilder/ui-ux-pro-max-skill` | **Deferred 2026-08-05 (Som's call)** — not installed. Was used for UX checklists (forms/feedback, accessibility) per `.ai/memory/session-history.md`; `frontend-design` + `frontend-animation-libs` cover the gap in the meantime. |
+| `caveman` | `github.com/juliusbrussee/caveman` | **Deferred 2026-08-05 (Som's call)** — not installed. Terse chat/response style; wouldn't apply to code, commits, or PR bodies anyway. |
+| `engineering` (architecture/ADRs, system-design, debug, testing-strategy, deploy-checklist, incident-response, tech-debt, documentation, standup) | **unknown — not in any registered marketplace** | Unresolved. Nobody could point to the original source when audited 2026-08-05; needs Som to identify it (or accept the loss) before this row can be fixed. |
+| `playwright-skill` | **unknown — not in any registered marketplace** | Unresolved as above. `claude-plugins-official` does carry an official Microsoft `playwright` plugin (browser automation/E2E MCP server) as a likely substitute if E2E coverage is needed before the source is found. |
+| `claude-md-management` | available in `claude-plugins-official`, not installed | Keeping this file itself current — install with `claude plugin install claude-md-management` when needed. |
 
 Connectors:
 
 | Connector | Status | Use for |
 |---|---|---|
-| GitHub (`plugin:engineering:github`) | Not yet authorized | PR/issue status, repo hygiene checks — authorize via Cowork Settings → Connectors → GitHub, or `claude mcp` in an interactive Claude Code session |
+| GitHub | Installed 2026-08-05 as the standalone `github@claude-plugins-official` plugin (the old `plugin:engineering:github` reference is stale now that `engineering` is gone) — authorization still unconfirmed, verify via `claude mcp` or Cowork Settings → Connectors → GitHub | PR/issue status, repo hygiene checks |
+
+**Known issue:** `supermemory@supermemory-plugins` is still `true` in the global `~/.claude/settings.json` but the `supermemory-plugins` marketplace isn't registered post-reset — dangling reference, needs Som to either re-add that marketplace or disable the entry.
 
 Update this table when new plugins are installed or connectors are authorized.

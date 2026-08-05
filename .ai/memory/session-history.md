@@ -5,6 +5,46 @@
 
 ---
 
+## 2026-08-05 (latest) — graphify graph built; made on-demand, PreToolUse hooks removed
+
+**Agent:** Claude Code (Opus 5)
+**Branch:** `docs/graphify-on-demand` → PR pending
+**Issues:** none — tooling only
+
+**Did:**
+- Finished the graph build that PR #74 left unbuilt: **1088 nodes / 2144 edges /
+  80 labelled communities over 166 files**. Verified with a live
+  `graphify query` on the dataset-upload path.
+- **Excluded `.ai/` from the semantic layer** (24 files — session history,
+  project memory, agent instruction files). Bookkeeping, not architecture, and
+  `session-history.md` is the largest file in the corpus, so it was the worst
+  tokens-per-signal in the repo. Left *unstamped* in `manifest.json`, which is
+  graphify's own "not done" marker — `graphify update .` re-queues them if we
+  ever want them. Nothing silently lost.
+- **Removed the PreToolUse hook-guards** from `.claude/settings.json`. Read the
+  implementation (`graphify/cli.py:491-546`) to confirm behaviour first: the
+  guard is nudge-only and fails open — it never blocks, and the blocking
+  `--strict` mode was never enabled here. But it fired on *every* `Bash|Grep`
+  and `Read|Glob` call at ~380ms each, and for Grep it nudges unconditionally
+  whenever a graph exists. That's per-call machinery delivering a reminder
+  `CLAUDE.md` already delivers once per session for free.
+- Rewrote `CLAUDE.md`'s `## graphify` section from "**first** run
+  `graphify query`" to explicit on-demand guidance, with a worth-it / not-worth-it
+  split and a "do not load graph context at session start" rule.
+
+**Why (Som's call):** new sessions should use the graph *as and when needed,
+only where needed* — not traverse it for context loading every session. The
+whole point of the tool is to cut token cost; loading it unconditionally spends
+the budget it was meant to save.
+
+**Graph health:** 258 dangling-endpoint edges — edges pointing at excluded `.ai/`
+nodes or at external symbols the AST pass can't resolve (`AsyncSession`,
+`Depends`, `HTTPException`). Expected for this corpus, not corruption.
+
+**Next:** Sprint 3 continuation (epic #58, next child #61).
+
+---
+
 ## 2026-08-05 (later) — Missing-skills audit: plugin/marketplace state was reset, `ponytail` + `document-skills` re-added
 
 **Agent:** Claude Code (Sonnet 5)

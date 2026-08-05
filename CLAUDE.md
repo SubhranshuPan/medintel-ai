@@ -117,10 +117,12 @@ Update this table when new plugins are installed or connectors are authorized.
 
 ## graphify
 
-This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
+A local knowledge graph of this repo sits at `graphify-out/` (machine-local, gitignored, rebuilt on demand). It's a **context-budget tool**, not project architecture — see the note in `.ai/memory/project-memory.md` distinguishing it from ADR-021's clinical knowledge store. It is built from source code and `docs/`; `.ai/` is deliberately excluded.
 
-Rules:
-- For codebase questions, first run `graphify query "<question>"` when graphify-out/graph.json exists. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
-- If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
-- Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
-- After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
+**It is on-demand, not a startup step.** Do not query it, read `GRAPH_REPORT.md`, or otherwise load graph context at the beginning of a session, and don't traverse it "just in case". Reach for it only when a question actually calls for it:
+
+- **Worth a query** — "where is X handled / what calls X", tracing a path across modules, orienting in an unfamiliar area, or any question you'd otherwise answer by grepping and opening five files. `graphify query "<question>"`, `graphify path "<A>" "<B>"`, `graphify explain "<concept>"`. These return a scoped subgraph and are cheaper than the reads they replace.
+- **Not worth it** — you already know the file, the task names the file, it's a one-line edit, it's a config/docs change, or the answer is in a file that's already in context. Just read the file. Opening a known file directly is correct and needs no justification.
+- `GRAPH_REPORT.md` (23 KB) is for a broad architecture pass only, or when query/path/explain came up short. It is not session-startup reading.
+
+The graph reflects the last build, so treat it as a map, not as truth — confirm against the actual file before editing based on what it says. Run `graphify update .` after code changes to keep it current (AST-only, no API cost).

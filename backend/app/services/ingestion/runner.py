@@ -102,7 +102,7 @@ def _to_node(document: SourceDocument) -> KnowledgeNode:
     return node
 
 
-async def _load_existing(
+async def load_nodes_for_documents(
     session: AsyncSession, documents: list[SourceDocument]
 ) -> dict[NodeKey, KnowledgeNode]:
     """Nodes already held for the source documents in this batch.
@@ -227,7 +227,7 @@ async def ingest_documents(
     if not documents:
         return report
 
-    nodes = await _load_existing(session, documents)
+    nodes = await load_nodes_for_documents(session, documents)
 
     for document in documents:
         key = _key(document)

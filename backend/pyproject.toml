@@ -24,6 +24,10 @@ dependencies = [
     # entity expansion outright and costs one pure-Python module to add.
     "httpx>=0.27",
     "defusedxml>=0.7",
+    # Vector store (#62, ADR-004). The embedded local mode runs the real
+    # filtering implementation, so the payload-filter tests exercise Qdrant
+    # rather than a stub.
+    "qdrant-client>=1.12",
 ]
 
 [dependency-groups]

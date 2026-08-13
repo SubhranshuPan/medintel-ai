@@ -73,6 +73,21 @@ class Settings(BaseSettings):
     ]
     pubmed_results_per_query: int = 25
 
+    # --- vector store (#62, ADR-004) ---
+    # Service name `qdrant` resolves on the compose network; localhost in a
+    # bare-metal dev run.
+    qdrant_url: str = "http://localhost:6333"
+    qdrant_api_key: str | None = None
+    qdrant_collection: str = "knowledge_chunks"
+    # Must match the embedding provider's output width. Qdrant fixes vector size
+    # at collection creation, so changing this means recreating the collection
+    # and re-embedding the corpus — it is not a runtime knob.
+    embedding_dimension: int = 768
+    # Chunk budget. Structural units under it are embedded whole; only a unit
+    # over it is token-split (see app/services/chunking.py).
+    chunk_max_tokens: int = 512
+    chunk_overlap_tokens: int = 64
+
     @model_validator(mode="after")
     def _validate_jwt_secret(self) -> "Settings":
         """Reject the placeholder or a weak secret outside development/test.

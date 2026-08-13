@@ -84,6 +84,18 @@
   any other change. Supersedes the older reading of the Session-End Checklist, which
   implied bookkeeping could be committed straight to `develop` (that's how `b42c1fe`
   slipped through). Writing the memory entry is still unprompted; *landing* it isn't.
+- **Don't stack PRs in this repo** (2026-08-13, learned from #77/#78). A PR based
+  on another feature branch fails twice over. (1) **No CI.**
+  `.github/workflows/ci.yml` triggers on `pull_request: branches: [develop]`,
+  which filters on the *base* branch, so a stacked PR silently skips the
+  `backend`/`frontend` jobs — it looks reviewed and has never been built.
+  (2) **It merges into the wrong place.** GitHub retargets a stacked PR to the
+  parent's base only when the parent's **branch is deleted**; merge the parent
+  and keep its branch, and the child merges into that feature branch instead of
+  `develop`, while GitHub still reports it as "Merged". That is exactly what
+  happened to #78 — #61 reached `develop`, #62 did not, and it needed re-landing
+  as PR #80. Base every child issue's branch directly on `develop` and accept the
+  duplicated diff, or merge-and-delete strictly in order.
 - **Milestone `Platform Vision & Architecture` (#8)** (2026-07-14): the home for
   cross-cutting scope/vision/architecture work (ADRs, core specs) that isn't tied
   to a single sprint. Don't file this kind of work under a Sprint milestone —

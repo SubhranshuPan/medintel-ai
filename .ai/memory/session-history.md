@@ -10,7 +10,8 @@
 **Agent:** Claude Code (Opus 5)
 **Branches:** `feat/corpus-ingestion-61` → PR #77; `feat/chunking-qdrant-62` → PR #78
 (stacked on #77); `docs/session-history-sprint3-61-62` → this entry
-**Issues:** #61, #62 (epic #58) — both PRs open, **neither merged**, epic not yet synced
+**Issues:** #61 merged to `develop` and closed; #62 merged into the wrong base and
+re-landing via PR #80 (see "Merge outcome" below); epic #58 synced for #61 only
 
 **Did:**
 - **Branch hygiene:** `docs/graphify-on-demand` was fully merged into `develop`
@@ -70,10 +71,33 @@ implement payload indexes ("Payload indexes have no effect in the local Qdrant")
 It *does* apply the filters, which is what the suite proves. Index presence is
 asserted only by a test gated on `MEDINTEL_TEST_QDRANT_URL`.
 
-**Next:** Som reviews #77 then #78 (merge order matters — #78 is stacked). On
-merge: close #61/#62, tick them in epic #58, update its Progress line. Then #63
-(LLM entity/relationship extraction) — its cost cap and estimate are still
-outstanding per the epic's risk list.
+**Merge outcome (same day) — the stacking trap fired.** Som merged #77 then #78.
+#77 landed on `develop` (`6eee619`). **#78 did not** — it merged into its stated
+base `feat/corpus-ingestion-61`, because GitHub only retargets a stacked PR when
+the parent's *branch is deleted*, and #78 merged 87 seconds after #77 with no
+deletion in between. GitHub reports #78 as "Merged", which is true and
+misleading. Nothing was lost: both branch tips carry an identical tree
+(`bf8a053`), and **PR #80** re-points the same commits at `develop`. #80 is also
+the first time this code runs through CI at all, since the workflow filters on
+base branch and #78 therefore never triggered the `backend` job.
+
+**Lesson worth keeping:** don't stack PRs in this repo unless the parent branch
+is deleted on merge. The workflow's `pull_request: branches: [develop]` filter
+means a stacked PR silently gets no CI, and the retarget that would fix both
+problems never happens if the branches are kept. Either merge-and-delete in
+order, or base each child directly on `develop` and accept the duplicated diff.
+
+**Epic #58 synced 2026-08-13:** #61 closed and ticked; the "stable source id /
+effective date / status / update cadence" DoD item ticked; Progress line rewritten
+with the #62 re-land and the embedding-provider blocker. **#62 left unticked on
+purpose** — it is not on `develop` until #80 merges.
+
+**Next:** merge #80 (wait for its green `backend` job — this code has still only
+ever run on local Python 3.14.6, and CI pins 3.12). Then delete
+`feat/corpus-ingestion-61`, `feat/chunking-qdrant-62` and this branch, close #62,
+tick it in the epic. Then #63 (LLM entity/relationship extraction) — its
+corpus-size cap and cost estimate are still outstanding per the epic's risk list,
+and the embedding-provider decision (ADR-024) is still open and blocks #67.
 
 ---
 

@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Offline fixture for the PubMed connector (#61). Shaped like a real NCBI
+  efetch response and trimmed to the elements the connector reads, so the
+  parser and every downstream stage can be tested with no network call.
+
+  Deliberately covers the awkward cases rather than only the happy one:
+    40010001 - structured abstract with Labels, full Y/M/D date, cites 40010002
+    40010002 - unstructured abstract, MedlineDate ("2019 Mar-Apr"), no refs
+    40010003 - no abstract at all; must be skipped, not stored title-only
+-->
+<PubmedArticleSet>
+  <PubmedArticle>
+    <MedlineCitation Status="MEDLINE">
+      <PMID Version="1">40010001</PMID>
+      <Article PubModel="Print">
+        <Journal>
+          <Title>Journal of Cardiac Failure Research</Title>
+          <JournalIssue CitedMedium="Print">
+            <Volume>31</Volume>
+            <PubDate>
+              <Year>2026</Year>
+              <Month>Feb</Month>
+              <Day>14</Day>
+            </PubDate>
+          </JournalIssue>
+        </Journal>
+        <ArticleTitle>Parallel initiation of four-pillar therapy in heart failure with reduced ejection fraction.</ArticleTitle>
+        <Abstract>
+          <AbstractText Label="BACKGROUND" NlmCategory="BACKGROUND">Sequential titration of disease-modifying therapy in heart failure with reduced ejection fraction delays achievement of target doses by a median of 6 months.</AbstractText>
+          <AbstractText Label="METHODS" NlmCategory="METHODS">We randomised 1204 adults with a left ventricular ejection fraction of 40 percent or below to parallel low-dose initiation of all four agent classes or to standard sequential titration.</AbstractText>
+          <AbstractText Label="RESULTS" NlmCategory="RESULTS">At 12 weeks, 71 percent of the parallel group were receiving all four classes compared with 34 percent of the sequential group. Rates of symptomatic hypotension were <i>not</i> significantly different.</AbstractText>
+          <AbstractText Label="CONCLUSIONS" NlmCategory="CONCLUSIONS">Parallel initiation achieved guideline-directed medical therapy substantially faster without an excess of treatment-limiting adverse events.</AbstractText>
+        </Abstract>
+      </Article>
+      <MeshHeadingList>
+        <MeshHeading>
+          <DescriptorName UI="D006333" MajorTopicYN="Y">Heart Failure</DescriptorName>
+        </MeshHeading>
+        <MeshHeading>
+          <DescriptorName UI="D000077221" MajorTopicYN="N">Sodium-Glucose Transporter 2 Inhibitors</DescriptorName>
+        </MeshHeading>
+      </MeshHeadingList>
+    </MedlineCitation>
+    <PubmedData>
+      <ReferenceList>
+        <Reference>
+          <Citation>Sequential versus combined initiation in HFrEF.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">40010002</ArticleId>
+          </ArticleIdList>
+        </Reference>
+        <Reference>
+          <Citation>An article outside this corpus.</Citation>
+          <ArticleIdList>
+            <ArticleId IdType="pubmed">39990000</ArticleId>
+            <ArticleId IdType="doi">10.1000/example.doi</ArticleId>
+          </ArticleIdList>
+        </Reference>
+      </ReferenceList>
+    </PubmedData>
+  </PubmedArticle>
+
+  <PubmedArticle>
+    <MedlineCitation Status="MEDLINE">
+      <PMID Version="1">40010002</PMID>
+      <Article PubModel="Print-Electronic">
+        <Journal>
+          <Title>European Review of Cardiovascular Medicine</Title>
+          <JournalIssue CitedMedium="Internet">
+            <Volume>24</Volume>
+            <PubDate>
+              <MedlineDate>2019 Mar-Apr</MedlineDate>
+            </PubDate>
+          </JournalIssue>
+        </Journal>
+        <ArticleTitle>Sequential versus combined initiation of disease-modifying therapy in HFrEF: a narrative review.</ArticleTitle>
+        <Abstract>
+          <AbstractText>Guideline-directed medical therapy for heart failure with reduced ejection fraction has historically been initiated sequentially, with each agent titrated to its maximum tolerated dose before the next is added. This review examines the pharmacological and trial-design reasons that convention arose and the emerging evidence that it delays benefit.</AbstractText>
+        </Abstract>
+      </Article>
+      <MeshHeadingList>
+        <MeshHeading>
+          <DescriptorName UI="D006333" MajorTopicYN="Y">Heart Failure</DescriptorName>
+        </MeshHeading>
+      </MeshHeadingList>
+    </MedlineCitation>
+    <PubmedData/>
+  </PubmedArticle>
+
+  <PubmedArticle>
+    <MedlineCitation Status="PubMed-not-MEDLINE">
+      <PMID Version="1">40010003</PMID>
+      <Article PubModel="Print">
+        <Journal>
+          <Title>Cardiology Correspondence</Title>
+          <JournalIssue CitedMedium="Print">
+            <PubDate>
+              <Year>2025</Year>
+            </PubDate>
+          </JournalIssue>
+        </Journal>
+        <ArticleTitle>Comment on parallel initiation strategies.</ArticleTitle>
+      </Article>
+    </MedlineCitation>
+    <PubmedData/>
+  </PubmedArticle>
+</PubmedArticleSet>

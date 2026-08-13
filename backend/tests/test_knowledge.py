@@ -668,5 +668,12 @@ def test_knowledge_enums_are_closed_sets() -> None:
         "withdrawn",
         "draft",
     }
-    assert {s.value for s in KnowledgeSourceType} == {"pubmed", "nice"}
+    # ``synthetic_guideline`` added by #61: the authored corpus standing in for
+    # NICE content must not be labelled ``nice`` (ADR-023). Changing this set is
+    # meant to require editing this assertion — that is what makes it closed.
+    assert {s.value for s in KnowledgeSourceType} == {
+        "pubmed",
+        "nice",
+        "synthetic_guideline",
+    }
     assert {c.value for c in UpdateCadence} == {"static", "periodic", "live"}

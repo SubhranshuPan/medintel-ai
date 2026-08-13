@@ -49,6 +49,13 @@ class KnowledgeSourceType(enum.StrEnum):
 
     pubmed = "pubmed"
     nice = "nice"
+    # An authored guideline corpus standing in for NICE content, which is
+    # licensed and could not be redistributed here (ADR-023). A separate value
+    # rather than reusing ``nice``: a platform whose central claim is
+    # first-class provenance cannot label authored text with a publisher that
+    # did not publish it. Retained as a distinct value so a later syndication
+    # grant swaps the connector without silently reclassifying existing rows.
+    synthetic_guideline = "synthetic_guideline"
 
 
 class KnowledgeStatus(enum.StrEnum):
@@ -125,6 +132,14 @@ class KnowledgeNode(UUIDMixin, TimestampMixin, Base):
     )
     # Human-resolvable reference for citation display (PMID / guideline id).
     external_ref: Mapped[str | None] = mapped_column(String(255))
+    # Who published it — journal title for an article, issuing body for a
+    # guideline. Deliberately not folded into ``heading_path`` (a structural
+    # breadcrumb) or ``external_ref`` (a single resolvable id): a rendered
+    # citation needs the venue alongside the id, and a clinician reading
+    # "supported by [J Cardiac Failure Res, 2026]" is being told something the
+    # PMID alone does not tell them. For the authored corpus it is also what
+    # makes the content's provenance visible at the point of citation.
+    source_venue: Mapped[str | None] = mapped_column(String(512))
     effective_date: Mapped[date | None] = mapped_column(Date)
 
     # --- lifecycle and authority ---

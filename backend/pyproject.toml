@@ -18,12 +18,17 @@ dependencies = [
     "email-validator>=2.2",
     "pandas>=2.2",
     "pandera>=0.20",
+    # Corpus ingestion (#61): E-utilities client, and a hardened XML parser.
+    # stdlib ElementTree expands internal entities, so a malformed or hostile
+    # response could exhaust memory before parsing fails — defusedxml refuses
+    # entity expansion outright and costs one pure-Python module to add.
+    "httpx>=0.27",
+    "defusedxml>=0.7",
 ]
 
 [dependency-groups]
 dev = [
     "pytest>=8.3",
-    "httpx>=0.27",
     "ruff>=0.7",
     "aiosqlite>=0.20",
 ]

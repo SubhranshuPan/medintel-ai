@@ -22,14 +22,19 @@ from pathlib import Path
 # `python -m scripts.ingest_corpus`.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from qdrant_client import AsyncQdrantClient  # noqa: E402
+
 from app.core.config import get_settings  # noqa: E402
 from app.core.db import AsyncSessionLocal  # noqa: E402
+from app.services.embedding import DeterministicEmbedder  # noqa: E402
+from app.services.indexing import index_documents  # noqa: E402
 from app.services.ingestion import (  # noqa: E402
     PubMedConnector,
     SourceDocument,
     ingest_documents,
     load_guideline_corpus,
 )
+from app.services.vector_store import KnowledgeVectorStore  # noqa: E402
 
 logger = logging.getLogger("ingest_corpus")
 
@@ -67,7 +72,7 @@ async def _collect(source: str, per_query: int | None) -> list[SourceDocument]:
     return documents
 
 
-async def _run(source: str, per_query: int | None, dry_run: bool) -> int:
+async def _run(source: str, per_query: int | None, dry_run: bool, index: bool) -> int:
     documents = await _collect(source, per_query)
     if not documents:
         logger.warning("no documents collected — nothing to ingest")
@@ -82,14 +87,55 @@ async def _run(source: str, per_query: int | None, dry_run: bool) -> int:
             print(f"  {node_type:>16}: {count}")
         return 0
 
+    settings = get_settings()
     async with AsyncSessionLocal() as session:
         report = await ingest_documents(session, documents)
+
+        index_report = None
+        if index:
+            # Chunking consumes the SourceDocuments still in hand, not the
+            # persisted rows — the structural sections a connector extracted are
+            # not a column on knowledge_nodes (see app/services/indexing.py).
+            client = AsyncQdrantClient(
+                url=settings.qdrant_url, api_key=settings.qdrant_api_key
+            )
+            try:
+                store = KnowledgeVectorStore(
+                    client,
+                    collection=settings.qdrant_collection,
+                    dimension=settings.embedding_dimension,
+                )
+                index_report = await index_documents(
+                    session,
+                    documents,
+                    store=store,
+                    embedder=DeterministicEmbedder(settings.embedding_dimension),
+                    max_tokens=settings.chunk_max_tokens,
+                    overlap_tokens=settings.chunk_overlap_tokens,
+                )
+            finally:
+                await client.close()
 
     print(
         f"created={report.created} updated={report.updated} "
         f"unchanged={report.unchanged} edges={report.edges_created} "
         f"unresolved_refs={report.unresolved_references}"
     )
+    if index_report is not None:
+        print(
+            f"indexed nodes={index_report.nodes_indexed} "
+            f"chunks={index_report.chunks_written} "
+            f"(split={index_report.split_chunks}) "
+            f"skipped={len(index_report.skipped_documents)}"
+        )
+        # DeterministicEmbedder is not a semantic model. Saying so at the point
+        # of use, because a corpus indexed with it will retrieve nonsense and
+        # the failure is otherwise silent.
+        print(
+            "WARNING: indexed with DeterministicEmbedder (hash-based, not "
+            "semantic). Suitable for pipeline checks only — no embedding "
+            "provider has been chosen yet (see app/services/embedding.py)."
+        )
     return 0
 
 
@@ -107,6 +153,11 @@ def main() -> int:
         action="store_true",
         help="Fetch and parse, print what would be written, touch nothing",
     )
+    parser.add_argument(
+        "--index",
+        action="store_true",
+        help="Also chunk, embed and index into Qdrant after ingesting (#62)",
+    )
     parser.add_argument("--verbose", "-v", action="store_true")
     args = parser.parse_args()
 
@@ -114,7 +165,7 @@ def main() -> int:
         level=logging.DEBUG if args.verbose else logging.INFO,
         format="%(levelname)s %(name)s: %(message)s",
     )
-    return asyncio.run(_run(args.source, args.per_query, args.dry_run))
+    return asyncio.run(_run(args.source, args.per_query, args.dry_run, args.index))
 
 
 if __name__ == "__main__":

@@ -84,6 +84,18 @@
   any other change. Supersedes the older reading of the Session-End Checklist, which
   implied bookkeeping could be committed straight to `develop` (that's how `b42c1fe`
   slipped through). Writing the memory entry is still unprompted; *landing* it isn't.
+- **Don't stack PRs in this repo** (2026-08-13, learned from #77/#78). A PR based
+  on another feature branch fails twice over. (1) **No CI.**
+  `.github/workflows/ci.yml` triggers on `pull_request: branches: [develop]`,
+  which filters on the *base* branch, so a stacked PR silently skips the
+  `backend`/`frontend` jobs — it looks reviewed and has never been built.
+  (2) **It merges into the wrong place.** GitHub retargets a stacked PR to the
+  parent's base only when the parent's **branch is deleted**; merge the parent
+  and keep its branch, and the child merges into that feature branch instead of
+  `develop`, while GitHub still reports it as "Merged". That is exactly what
+  happened to #78 — #61 reached `develop`, #62 did not, and it needed re-landing
+  as PR #80. Base every child issue's branch directly on `develop` and accept the
+  duplicated diff, or merge-and-delete strictly in order.
 - **Milestone `Platform Vision & Architecture` (#8)** (2026-07-14): the home for
   cross-cutting scope/vision/architecture work (ADRs, core specs) that isn't tied
   to a single sprint. Don't file this kind of work under a Sprint milestone —
@@ -293,7 +305,18 @@
   central claim. Resolve at the ingestion issue (#61), not at evaluation
   (#67): obtain syndication API access, hand-curate a small subset with
   attribution, or fall back to a synthetic guideline corpus with
-  deliberately-authored supersessions. Owner: Som. Status: open.
+  deliberately-authored supersessions. Owner: Som.
+  **Status: RESOLVED 2026-08-13 as ADR-023 (PR #77).** No scraper ships. The
+  Open Content Licence is territory-limited and non-commercial and does not
+  cover bulk extraction; syndication is per-application and we hold no grant.
+  An authored guideline corpus stands in, under a **new `synthetic_guideline`
+  source type** — deliberately not relabelled `nice`, because a platform whose
+  central claim is first-class provenance cannot attach a real authority's name
+  to text that authority never wrote, and the retrieval layer filters and cites
+  on exactly that column. Residual risk, stated in the ADR: guideline-half
+  retrieval metrics are evidence about the *architecture*, not about
+  performance on real NICE content, and must always be reported with that
+  caveat. Applying for syndication remains worthwhile and is not blocked.
 - **Sprint 3 ingestion LLM cost (opened 2026-07-25, #63):** entity/edge
   extraction is one LLM call per structural unit across the whole corpus.
   Haiku 4.5 keeps unit cost low, but a corpus-size cap and a recorded cost
@@ -304,6 +327,26 @@
 
 ## Open Questions / Decisions Pending
 
+- **Embedding provider — OPEN, needs Som, blocks meaningful #67 metrics
+  (opened 2026-08-13, #62/PR #78).** ADR-022 chose Claude for extraction and
+  generation, but Anthropic publishes no embedding endpoint, so the embedding
+  model is a genuinely separate decision and was **not** made silently inside
+  #62. The tradeoff: a local biomedical encoder (PubMedBERT-family — domain fit,
+  no per-call cost, but a heavy dependency and operational weight) versus a
+  hosted general-purpose provider (light to run, ongoing cost, weaker clinical
+  vocabulary). #62 ships the `EmbeddingProvider` seam plus a hash-based
+  `DeterministicEmbedder` that is *not semantic* and warns at point of use.
+  **Consequence if left open:** #67's retrieval metrics cannot mean anything —
+  they would measure hash collisions. Should land as **ADR-024** before #67, and
+  ideally before #64. Note `MEDINTEL_EMBEDDING_DIMENSION` is fixed at collection
+  creation in Qdrant, so changing it later means recreating the collection and
+  re-embedding the corpus.
+- **Local Python toolchain broke (noted 2026-08-13).** `backend/.venv` pointed at
+  Python 3.12.10, which is no longer installed on Som's machine (only 3.14.6),
+  and `python.exe` was missing from `Scripts/`. Rebuilt on 3.14.6 as `.venv`,
+  old one preserved as `.venv.broken-py312` (both gitignored). All deps install
+  and the suite passes on 3.14.6, **but that is unverified against whatever
+  `.github/workflows/ci.yml` pins** — check before relying on local green.
 - **CI workflow timing:** RESOLVED for backend — `.github/workflows/ci.yml`
   landed in #8 (2026-07-12): ruff + pytest on push/PR to `develop`,
   `working-directory: backend`. **Frontend CI still pending** — scheduled into

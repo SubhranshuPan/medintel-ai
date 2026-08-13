@@ -54,6 +54,25 @@ class Settings(BaseSettings):
     storage_dir: Path = Path("./storage/datasets")
     max_upload_bytes: int = 50 * 1024 * 1024  # 50 MB — reject bigger CSVs outright
 
+    # --- corpus ingestion (#61) ---
+    # NCBI requires a tool name and contact address on every E-utilities call
+    # and contacts the address before blocking a client that misbehaves. No
+    # default email: a shared or invented address would mean someone else gets
+    # the warning, so ingestion refuses to run until this is set deliberately.
+    pubmed_tool: str = "medintel-ai"
+    pubmed_email: str = ""
+    # Optional. Raises NCBI's rate limit from 3 to 10 requests/second.
+    pubmed_api_key: str | None = None
+    # The clinical query set the corpus is built from. Narrow on purpose —
+    # extraction (#63) costs one LLM call per structural unit, so corpus breadth
+    # is a cost decision as much as a coverage one.
+    pubmed_queries: list[str] = [
+        "heart failure reduced ejection fraction guideline directed therapy",
+        "atrial fibrillation anticoagulation stroke prevention",
+        "type 2 diabetes glycaemic target adults",
+    ]
+    pubmed_results_per_query: int = 25
+
     @model_validator(mode="after")
     def _validate_jwt_secret(self) -> "Settings":
         """Reject the placeholder or a weak secret outside development/test.

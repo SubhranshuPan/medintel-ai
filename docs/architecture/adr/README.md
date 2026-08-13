@@ -39,3 +39,4 @@ ADRs provide historical context for future contributors and simplify architectur
 | [020](ADR-020-frontend-ui-component-libraries.md) | Frontend UI Component & Animation Library Stack | Accepted |
 | [021](ADR-021-knowledge-aware-rag.md) | Knowledge-Aware RAG Architecture and PostgreSQL Graph Store | Accepted |
 | [022](ADR-022-llm-provider.md) | Anthropic Claude as LLM Provider | Accepted |
+| [023](ADR-023-corpus-sources-and-licensing.md) | Corpus Sources and Licensing — PubMed Live, NICE Substituted | Accepted |

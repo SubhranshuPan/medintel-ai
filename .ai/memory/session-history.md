@@ -5,7 +5,79 @@
 
 ---
 
-## 2026-08-05 (latest) — graphify graph built; made on-demand, PreToolUse hooks removed
+## 2026-08-13 (latest) — Sprint 3: corpus ingestion (#61) and chunking/Qdrant (#62)
+
+**Agent:** Claude Code (Opus 5)
+**Branches:** `feat/corpus-ingestion-61` → PR #77; `feat/chunking-qdrant-62` → PR #78
+(stacked on #77); `docs/session-history-sprint3-61-62` → this entry
+**Issues:** #61, #62 (epic #58) — both PRs open, **neither merged**, epic not yet synced
+
+**Did:**
+- **Branch hygiene:** `docs/graphify-on-demand` was fully merged into `develop`
+  (zero unmerged commits, remote already gone) — deleted. `develop` was 2 behind,
+  fast-forwarded. Only `develop` and `main` remain.
+- **#61 corpus ingestion (PR #77):** PubMed connector over NCBI E-utilities
+  (identified by tool + email, rate-limited in the connector rather than by caller
+  discipline, `defusedxml`, response size cap); authored guideline corpus;
+  idempotent persistence keyed on `(source_type, source_id, heading_path)`;
+  metadata-asserted `SUPERSEDES`/`CITES` edges with NULL `confidence`/`extracted_by`;
+  `scripts/ingest_corpus.py`. 25 new tests, all offline against committed fixtures.
+- **#62 chunking + Qdrant (PR #78):** structure-first chunker (token-splits only
+  *within* an oversized unit); `EmbeddingProvider` seam + `DeterministicEmbedder`;
+  Qdrant collection with the ADR-021 §4.4 payload; indexing pipeline joining
+  chunks to nodes. 33 new tests.
+- Suite: **143 passed, 1 skipped**, `ruff` clean, `alembic history` linear
+  (single head `d7e4a1c60b93`).
+
+**Decisions (also in `project-memory.md`):**
+- **ADR-023 — NICE licensing resolved, not deferred.** No scraper ships against
+  nice.org.uk; the Open Content Licence doesn't cover bulk extraction and we hold
+  no syndication grant. An authored corpus stands in under a **new
+  `synthetic_guideline` source type** — deliberately *not* relabelled `nice`,
+  because attaching a real authority's name to authored text would falsify the
+  exact column the retrieval layer filters and cites on.
+- **Embedding provider deliberately NOT chosen — needs Som's call as ADR-024.**
+  ADR-022 picked Claude, but Anthropic publishes no embedding endpoint, so this is
+  a separate decision. #62 ships the seam plus a hash-based placeholder that warns
+  at point of use. **This is a live blocker for #67's retrieval metrics** — they
+  cannot be meaningful until a real embedder lands.
+
+**Two CI issues found and dealt with:**
+- **`uv.lock` would have broken the backend job.** CI runs `uv sync --frozen`,
+  which fails outright on a lock that doesn't match `pyproject.toml` — adding
+  `defusedxml`/`qdrant-client` and promoting `httpx` to a runtime dep left it
+  stale. Regenerated on both branches. Note the lock format revision moved
+  **2 → 3** (uv 0.12.3); `astral-sh/setup-uv@v3` pins no version so it installs
+  a uv new enough to read it.
+- **A stacked PR gets no CI here.** The workflow triggers on
+  `pull_request: branches: [develop]`, filtering on the *base* branch, so PR #78
+  (based on `feat/corpus-ingestion-61`) ran only CodeRabbit/Corridor. It picks up
+  CI automatically once #77 merges and GitHub retargets it. **Don't merge #78 on
+  the strength of the local run** — flagged in a comment on the PR itself.
+
+**Environment problem Som should know about:** `backend/.venv` was already broken
+before this session — it pointed at Python 3.12.10, which is no longer installed
+(only 3.14.6 is), and `python.exe` was missing from `Scripts/`. Moved it to
+`.venv.broken-py312` and rebuilt on **3.14.6** to run the suite. Both gitignored,
+so no PR depends on it. **CI pins 3.12**, so local green ≠ CI green: #77's CI is
+green on 3.12, but #78's new code has only ever run on 3.14.6 (see above).
+`uv` also had to be installed into the venv to regenerate the lock, and its
+managed 3.12.13 install was itself corrupt (empty target dir) — cleared and
+worked around with `--python <system 3.14> UV_PYTHON_DOWNLOADS=never`.
+
+**Verified limitation (not assumed):** the embedded Qdrant backend does not
+implement payload indexes ("Payload indexes have no effect in the local Qdrant").
+It *does* apply the filters, which is what the suite proves. Index presence is
+asserted only by a test gated on `MEDINTEL_TEST_QDRANT_URL`.
+
+**Next:** Som reviews #77 then #78 (merge order matters — #78 is stacked). On
+merge: close #61/#62, tick them in epic #58, update its Progress line. Then #63
+(LLM entity/relationship extraction) — its cost cap and estimate are still
+outstanding per the epic's risk list.
+
+---
+
+## 2026-08-05 — graphify graph built; made on-demand, PreToolUse hooks removed
 
 **Agent:** Claude Code (Opus 5)
 **Branch:** `docs/graphify-on-demand` → PR pending

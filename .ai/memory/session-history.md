@@ -10,8 +10,8 @@
 **Agent:** Claude Code (Opus 5)
 **Branches:** `feat/corpus-ingestion-61` → PR #77; `feat/chunking-qdrant-62` → PR #78
 (stacked on #77); `docs/session-history-sprint3-61-62` → this entry
-**Issues:** #61 merged to `develop` and closed; #62 merged into the wrong base and
-re-landing via PR #80 (see "Merge outcome" below); epic #58 synced for #61 only
+**Issues:** #61 and #62 both merged to `develop` and closed; epic #58 synced for
+both. #62 took two attempts — see "Merge outcome" below
 
 **Did:**
 - **Branch hygiene:** `docs/graphify-on-demand` was fully merged into `develop`
@@ -87,17 +87,29 @@ means a stacked PR silently gets no CI, and the retarget that would fix both
 problems never happens if the branches are kept. Either merge-and-delete in
 order, or base each child directly on `develop` and accept the duplicated diff.
 
-**Epic #58 synced 2026-08-13:** #61 closed and ticked; the "stable source id /
-effective date / status / update cadence" DoD item ticked; Progress line rewritten
-with the #62 re-land and the embedding-provider blocker. **#62 left unticked on
-purpose** — it is not on `develop` until #80 merges.
+**Resolved end of day.** PR #80 went green on CI (`backend` and `frontend` both
+pass on **Python 3.12** — the first real evidence for this code, which until then
+had only ever run on local 3.14.6). Som merged #80 (`7bafe8b`) and #79
+(`14516e2`); `develop` is at `14516e2`.
 
-**Next:** merge #80 (wait for its green `backend` job — this code has still only
-ever run on local Python 3.14.6, and CI pins 3.12). Then delete
-`feat/corpus-ingestion-61`, `feat/chunking-qdrant-62` and this branch, close #62,
-tick it in the epic. Then #63 (LLM entity/relationship extraction) — its
-corpus-size cap and cost estimate are still outstanding per the epic's risk list,
-and the embedding-provider decision (ADR-024) is still open and blocks #67.
+**Epic #58 synced 2026-08-13:** #61 and #62 both closed and ticked. DoD items
+ticked: "stable source id / effective date / status / update cadence" and "Qdrant
+payload references the same `node_id`, so structural filters run *before* vector
+search". Progress line rewritten to 4/10 on `develop`; the NICE risk struck
+through as resolved by ADR-023; the embedding-provider blocker added to the risk
+list explicitly rather than living only in prose.
+
+**Branches deleted** (local and remote) after verifying containment:
+`feat/chunking-qdrant-62` and `docs/session-history-sprint3-61-62` were fully in
+`develop`; `feat/corpus-ingestion-61` held only #78's merge commit as history
+metadata, with a content diff against `develop` showing deletions only — i.e.
+`develop` strictly ahead. Only `develop` and `main` remain. Graph rebuilt:
+**1668 nodes / 3145 edges / 122 communities.**
+
+**Next:** #63 (LLM entity/relationship extraction). Two things are open going in
+— the corpus-size cap and cost estimate the epic's risk list requires *before*
+#63 starts, and the embedding-provider decision (ADR-024), which is still Som's
+call and still blocks meaningful #67 metrics.
 
 ---
 

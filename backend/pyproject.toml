@@ -28,6 +28,10 @@ dependencies = [
     # filtering implementation, so the payload-filter tests exercise Qdrant
     # rather than a stub.
     "qdrant-client>=1.12",
+    # Knowledge extraction (#63, ADR-022). Strict tool use is what makes the
+    # closed edge set enforceable by the API rather than by prompt wording;
+    # the SDK is imported lazily so nothing else in the app depends on it.
+    "anthropic>=0.40",
 ]
 
 [dependency-groups]

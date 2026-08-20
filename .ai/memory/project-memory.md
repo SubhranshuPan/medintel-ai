@@ -9,6 +9,27 @@
 
 ## Conventions Adopted
 
+- **A model may never assert `SUPERSEDES` or `CITES` (set 2026-08-20, #63).**
+  The model's extraction vocabulary is a strict subset of the closed edge set:
+  `DEFINED_BY | EXCEPTION_TO | RELATED_TO`. Both excluded types are facts the
+  publisher states outright and are already written from metadata at ingestion
+  (#61). The reason is clinical, not architectural: `SUPERSEDES` is the only edge
+  type that *removes* guidance from retrieval, so an inferred one would let a
+  paraphrase retire live guidance silently. Only a publisher retires guidance.
+  Applies to any future extractor, not just `extract-v1`.
+- **An empty filter means "nothing", never "no filter" (set 2026-08-20, #64).**
+  Every structural filter sequence is tested with `is not None`, not for
+  truthiness, on both the relational and Qdrant sides. Read the other way, a
+  query narrowed to active guidance silently returns withdrawn guidance — the
+  narrowing *widens*. Likewise an empty candidate set short-circuits rather than
+  reaching the vector store, where "match any of nothing" is inexpressible and
+  therefore becomes a corpus-wide search that looks healthy.
+- **Run `/code-review high` on a branch before committing (set 2026-08-20).**
+  On #63 and #64 it found 12 real defects between them, two of which the passing
+  test suite did not catch — a watermark that would have permanently skipped
+  units, and an empty candidate set collapsing into an unfiltered search. Cheap
+  relative to what it catches; treat as a standing step, not an optional one.
+
 - RAG/LLM code must go through the existing multi-provider abstraction layer —
   never hardcode a single provider (OpenAI/Anthropic/Gemini) directly into a service.
 - Backend follows a repository/service pattern. A new ORM access pattern is a
@@ -327,6 +348,15 @@
 
 ## Open Questions / Decisions Pending
 
+- **LLM extraction calls the provider SDK directly, not LangChain — flagged for
+  Som (opened 2026-08-20, #63/PR #82).** ADR-005 and ADR-022 both route LLM work
+  through LangChain. `app/services/extraction/provider.py` deviates: one
+  schema-bound tool-use call per structural unit, with no chain, no memory and no
+  branching, gains nothing from an orchestration framework beyond a dependency
+  tree and an abstraction over `tools=[...]`. LangGraph enters at **#65**, where
+  there is an actual graph. **Not a silent descope** — raised in the PR body for
+  Som to accept or overrule. If overruled, it is a contained change: everything
+  goes through the `ExtractionModel` protocol, so only that one class moves.
 - **Embedding provider — OPEN, needs Som, blocks meaningful #67 metrics
   (opened 2026-08-13, #62/PR #78).** ADR-022 chose Claude for extraction and
   generation, but Anthropic publishes no embedding endpoint, so the embedding

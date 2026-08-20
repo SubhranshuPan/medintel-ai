@@ -5,7 +5,71 @@
 
 ---
 
-## 2026-08-13 (latest) — Sprint 3: corpus ingestion (#61) and chunking/Qdrant (#62)
+## 2026-08-20 (latest) — Sprint 3: LLM extraction (#63) and retrieval tools (#64)
+
+**Agent:** Claude Code (Opus 5)
+**Branches:** `feat/knowledge-extraction-63` → PR #82; `feat/retrieval-tools-64`
+→ PR #83; `docs/session-history-sprint3-63-64` → this entry
+**Issues:** #63 and #64, both awaiting Som's merge. Not stacked — each branched
+from `develop` independently, per the convention recorded after #78
+
+**Did:**
+- **#63 knowledge extraction (PR #82):** `app/services/extraction/` — a
+  constrained tool-use contract (`schema.py`), the provider seam plus spend
+  guard (`provider.py`), and the run itself (`runner.py`), with
+  `scripts/extract_knowledge.py` as the entry point. 47 new tests, all offline
+  against a scripted model. `anthropic>=0.40` added; `uv.lock` regenerated
+  (CI runs `uv sync --frozen`, so a stale lock would have failed the build).
+- **#64 retrieval tools (PR #83):** `app/services/retrieval.py` — `vector_search`,
+  `structured_filter`, `graph_traverse`, `fact_lookup`, each a plain typed
+  function with no orchestration coupling. `TraversalHit` gained `path`, surfaced
+  from the CTE that already computed it for its visited-set guard. 36 new tests.
+- Suite: **178 passed, 1 skipped**, `ruff` clean. PR #82 CI green.
+
+**Decisions (also in `project-memory.md`):**
+- **A model may not assert `SUPERSEDES` or `CITES`.** Both are publisher-stated
+  and already written from metadata at ingestion (#61). `SUPERSEDES` is the only
+  edge type that *removes* guidance from retrieval, so letting a model infer it
+  would mean a paraphrase could retire live clinical guidance, silently. The
+  model's vocabulary is `DEFINED_BY | EXCEPTION_TO | RELATED_TO` — a strict
+  subset of the closed set, narrowed on safety grounds.
+- **ADR deviation, flagged not buried:** extraction calls the Anthropic SDK
+  directly rather than through LangChain (ADR-005/ADR-022). One schema-bound
+  call per unit with no chain, memory or branching gains nothing from an
+  orchestration framework. LangGraph enters at #65. Flagged in PR #82 for Som to
+  accept or overrule; if overruled it is a contained change behind the
+  `ExtractionModel` protocol.
+- **Cost gate answered (the outstanding risk on epic #58):** measured by
+  rendering real prompts against the committed corpus, not assumed —
+  **$0.0040 per structural unit** (~2,770 in / 250 out on Haiku 4.5). Current
+  corpus ≈ **$0.34**; the 500-unit cap ≈ **$2.01** against a $5 ceiling. Both
+  caps enforced in code, budget checked *before* each call, and failed attempts
+  metered — a provider that refuses every call still bills for every call.
+- **Extracted terms are scoped to their document, not deduplicated corpus-wide.**
+  A corpus-wide term node would have to claim a `source_type` it does not have.
+  Reconciling two publishers' definitions is a normalisation problem, not an
+  extraction one.
+
+**Still open (unchanged from 2026-08-13):**
+- **Embedding provider — still needs Som's call as ADR-024.** #64's retrieval
+  tests assert on *filtering and plumbing*, which is provider-independent, so
+  this did not block today. It still gates meaningful #67 metrics, which would
+  otherwise measure hash collisions.
+
+**Process notes:**
+- `/code-review high` was run on each branch before committing and found 7 real
+  defects in #63 and 5 in #64 — including two the working tests did not catch: a
+  watermark that would have permanently skipped some units, and an empty
+  candidate set collapsing into a corpus-wide search. All fixed, each with a
+  regression test. Worth keeping as a standing step.
+- `graphify-out/` does not exist in this clone (gitignored, never built here).
+  Not built for this session: the work touched a small, already-identified set of
+  modules, so a whole-repo graph build would have cost more than the targeted
+  reads it replaced. Consistent with the on-demand rule in `CLAUDE.md`.
+
+---
+
+## 2026-08-13 — Sprint 3: corpus ingestion (#61) and chunking/Qdrant (#62)
 
 **Agent:** Claude Code (Opus 5)
 **Branches:** `feat/corpus-ingestion-61` → PR #77; `feat/chunking-qdrant-62` → PR #78

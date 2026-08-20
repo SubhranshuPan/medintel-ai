@@ -122,23 +122,33 @@ class SearchFilters:
     effective_to: date | None = None
 
     def to_qdrant(self) -> models.Filter | None:
+        """The Qdrant filter, or None when nothing was constrained.
+
+        Each sequence is tested with ``is not None`` rather than for
+        truthiness. An explicitly empty sequence means "nothing matches", and
+        treating it as "no constraint" would make a narrowing *widen* the
+        result — on ``status``, that means a query filtered to active guidance
+        silently returning withdrawn guidance. Qdrant renders an empty
+        ``MatchAny`` as a condition nothing satisfies, which is the intended
+        reading.
+        """
         must: list[models.FieldCondition] = []
 
-        if self.status:
+        if self.status is not None:
             must.append(
                 models.FieldCondition(
                     key="status",
                     match=models.MatchAny(any=[str(s) for s in self.status]),
                 )
             )
-        if self.source_type:
+        if self.source_type is not None:
             must.append(
                 models.FieldCondition(
                     key="source_type",
                     match=models.MatchAny(any=[str(s) for s in self.source_type]),
                 )
             )
-        if self.category:
+        if self.category is not None:
             # MatchAny on a list-valued payload field matches when *any* element
             # matches — "cardiology or endocrinology", not "both".
             must.append(
@@ -146,7 +156,7 @@ class SearchFilters:
                     key="category", match=models.MatchAny(any=list(self.category))
                 )
             )
-        if self.node_ids:
+        if self.node_ids is not None:
             must.append(
                 models.FieldCondition(
                     key="node_id",

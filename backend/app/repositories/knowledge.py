@@ -53,11 +53,18 @@ class TraversalHit(NamedTuple):
     caller can tell a supersession notice apart from an incidental citation
     without issuing a second query per hit — a distinction that matters when
     the result feeds clinical decision support.
+
+    ``path`` is the full route taken, starting at the traversal's start node and
+    ending at ``node``. Returned rather than discarded because the generation
+    layer has to cite *why* a node was reached, not only that it was: "withdrawn
+    by the 2026 edition, which replaced the 2019 edition you asked about" is an
+    answer a clinician can check, and a bare node is not.
     """
 
     node: KnowledgeNode
     depth: int
     edge_type: KnowledgeEdgeType
+    path: tuple[UUID, ...]
 
 
 def _far_endpoint(
@@ -105,6 +112,16 @@ def _edge_priority(edge_type: ColumnElement[KnowledgeEdgeType]) -> ColumnElement
         (edge_type == KnowledgeEdgeType.DEFINED_BY, 2),
         else_=3,  # CITES, RELATED_TO — context, not safety signal
     )
+
+
+def _parse_path(path: str) -> tuple[UUID, ...]:
+    """Read the delimited visited-path string back into node ids.
+
+    ``UUID`` accepts both the dashed form PostgreSQL casts to and the undashed
+    hex SQLite stores, so one parser serves both dialects — the same reason the
+    path is built by casting in SQL rather than formatted from Python.
+    """
+    return tuple(UUID(part) for part in path.split(_PATH_SEP) if part)
 
 
 def _delimited(node: ColumnElement[UUID]) -> ColumnElement[str]:
@@ -206,6 +223,11 @@ class KnowledgeNodeRepository(BaseRepository[KnowledgeNode]):
             walk.c.node_id,
             walk.c.depth,
             walk.c.edge_type,
+            # The visited guard already carries the route as a string, so the
+            # path costs nothing extra to return — it is computed either way,
+            # and discarding it would only mean the generation layer has to
+            # reconstruct with a second query what this one already knew.
+            walk.c.path,
             priority.label("priority"),
             func.row_number()
             .over(partition_by=walk.c.node_id, order_by=(walk.c.depth, priority))
@@ -214,7 +236,12 @@ class KnowledgeNodeRepository(BaseRepository[KnowledgeNode]):
         shortest = select(ranked).where(ranked.c.rank == 1).subquery()
 
         result = await self.session.execute(
-            select(KnowledgeNode, shortest.c.depth, shortest.c.edge_type)
+            select(
+                KnowledgeNode,
+                shortest.c.depth,
+                shortest.c.edge_type,
+                shortest.c.path,
+            )
             .join(shortest, KnowledgeNode.id == shortest.c.node_id)
             # Priority before id: within a depth the cut must not be arbitrary,
             # or a supersession notice can be truncated away by citation noise.
@@ -222,8 +249,13 @@ class KnowledgeNodeRepository(BaseRepository[KnowledgeNode]):
             .limit(limit)
         )
         return [
-            TraversalHit(node=node, depth=depth, edge_type=KnowledgeEdgeType(edge_type))
-            for node, depth, edge_type in result.all()
+            TraversalHit(
+                node=node,
+                depth=depth,
+                edge_type=KnowledgeEdgeType(edge_type),
+                path=_parse_path(path),
+            )
+            for node, depth, edge_type, path in result.all()
         ]
 
 

@@ -88,6 +88,26 @@ class Settings(BaseSettings):
     chunk_max_tokens: int = 512
     chunk_overlap_tokens: int = 64
 
+    # --- knowledge extraction (#63, ADR-022) ---
+    # No default key: extraction is the only pipeline here that spends money,
+    # and it should refuse to start rather than pick up an ambient credential.
+    anthropic_api_key: str | None = None
+    # Pinned as config so a tier change is a config change and shows up in the
+    # audit log, per ADR-022 — never hard-coded at the call site.
+    extraction_model: str = "claude-haiku-4-5"
+    # Two independent ceilings on a single run, both enforced in code. The unit
+    # cap bounds how much corpus is touched; the spend cap bounds the bill even
+    # if the per-call cost turns out higher than estimated. Measured against the
+    # real corpus at ~2,770 input / 250 output tokens per structural unit, which
+    # is $0.0040 on Haiku 4.5 — so 500 units is about $2.01, and the $5 ceiling
+    # is the backstop rather than the expected spend. The current corpus (85
+    # units) costs roughly $0.34 to extract in full.
+    extraction_max_units: int = 500
+    extraction_budget_usd: float = 5.0
+    # Candidate passages offered per call — the dominant input-token cost after
+    # the passage itself, and the set outside which a target is rejected.
+    extraction_max_candidates: int = 20
+
     @model_validator(mode="after")
     def _validate_jwt_secret(self) -> "Settings":
         """Reject the placeholder or a weak secret outside development/test.

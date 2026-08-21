@@ -125,4 +125,10 @@ A local knowledge graph of this repo sits at `graphify-out/` (machine-local, git
 - **Not worth it** — you already know the file, the task names the file, it's a one-line edit, it's a config/docs change, or the answer is in a file that's already in context. Just read the file. Opening a known file directly is correct and needs no justification.
 - `GRAPH_REPORT.md` (23 KB) is for a broad architecture pass only, or when query/path/explain came up short. It is not session-startup reading.
 
-The graph reflects the last build, so treat it as a map, not as truth — confirm against the actual file before editing based on what it says. Run `graphify update .` after code changes to keep it current (AST-only, no API cost).
+The graph reflects the last build, so treat it as a map, not as truth — confirm against the actual file before editing based on what it says.
+
+**Rebuilds are automatic as of 2026-08-21** — `graphify hook install` was run, so `post-commit` and `post-checkout` git hooks rebuild the graph in the background (AST-only, no API cost; detached, so `git commit` returns immediately; skipped during rebase/merge/cherry-pick). It had gone stale before that because nothing ever ran the rebuild: the graph sat at commit `14516e2` while `develop` moved eight commits ahead, and `CLAUDE.md` asked for a manual `graphify update .` that in practice nobody ran. Hooks live in `.git/hooks/`, which is machine-local and untracked — **a fresh clone needs `graphify hook install` again**, and that is the first thing to check if the graph looks out of date.
+
+Verify with `graphify hook status`; rebuild by hand with `graphify update .` if you have reason to think a rebuild was missed. `graphify hook install` also appends a `merge=graphify` line to `.gitattributes` — that is reverted here on purpose, since `graphify-out/` is gitignored and a merge driver for a file that is never committed is dead config in a tracked file.
+
+Community *labels* are a separate, LLM-backed step (`graphify label`) and do cost money, so they are **not** part of the automatic rebuild. After a large refactor the CLI may report that the community set has drifted from its saved labels; that degrades label quality in `GRAPH_REPORT.md`, not query correctness, and re-labelling is Som's call rather than something to run unprompted.

@@ -5,7 +5,67 @@
 
 ---
 
-## 2026-08-20 (latest) — Sprint 3: LLM extraction (#63) and retrieval tools (#64)
+## 2026-08-21 (latest) — Merge close-out for #63/#64, and the graphify staleness fix
+
+**Agent:** Claude Code (Opus 5)
+**Branch:** `docs/graphify-hook-and-session-close` → PR (this entry + the CLAUDE.md
+graphify section)
+**Issues:** #63 and #64 closed; epic #58 synced to 6/10 children
+
+**Did:**
+- Som merged PR #82 (#63), #83 (#64) and #84 (session log) and deleted the remote
+  branches. Synced `develop`, pruned the three stale local branches.
+- **Closed #63 and #64 manually.** "Closes #N" in a PR body does *not* auto-close
+  when the PR targets `develop` — GitHub only auto-closes on the default branch,
+  which here is `main`. This is why the standing epic-sync convention in
+  `CLAUDE.md` exists; it is not optional bookkeeping.
+- **Epic #58 synced:** both children ticked, progress rewritten to 6/10, next-up
+  moved to #65, and the **extraction-cost risk struck through as closed** with the
+  measured numbers. The embedding-provider risk is re-worded rather than closed —
+  it did not block #64, but still gates #67 and still wants ADR-024.
+
+**graphify — diagnosed and fixed:**
+- **Correction to yesterday's entry:** I reported that `graphify-out/` did not
+  exist. It does, and always did — the check ran from `backend/` after an earlier
+  `cd` persisted the working directory in the shell. The stated reason for
+  skipping graphify yesterday was therefore wrong. (The *decision* was still
+  defensible on its own terms — the work touched a small pre-identified set of
+  modules — but it was not made for the reason given.)
+- **Root cause of staleness: nothing ever rebuilt it.** No git hook, no Claude
+  Code hook. `graphify hook status` reported post-commit, post-checkout and the
+  merge driver all uninstalled. The graph sat at commit `14516e2` (2026-08-13)
+  while `develop` moved 8 commits ahead, so none of #61–#64 was in it. `CLAUDE.md`
+  asked for a manual `graphify update .` after code changes, which in practice
+  nobody ran — a convention with no enforcement.
+- **Fixed:** ran `graphify update .` (1668 → **1957 nodes**, 3145 → **3816 edges**;
+  verified `extraction/schema.py`, `extraction/runner.py`, `retrieval.py` and both
+  new test modules are now reachable by query), then `graphify hook install`.
+  Rebuilds now run detached on post-commit and post-checkout — AST-only, no API
+  cost, and skipped during rebase/merge/cherry-pick. Verified live: the
+  post-checkout hook fired on the branch switch for this entry.
+- **Reverted one side effect.** `graphify hook install` appends
+  `graphify-out/graph.json merge=graphify` to `.gitattributes` — a *tracked* file.
+  `graphify-out/` is gitignored here, so a merge driver for a file that is never
+  committed is dead config; reverted. The local `.git/config` driver registration
+  is left in place, inert and machine-local.
+- **Not done, deliberately:** `graphify label` re-runs community naming through an
+  LLM and costs money. The rebuild reported the community set has drifted (122
+  saved labels vs 136 communities). That degrades label quality in
+  `GRAPH_REPORT.md`, not query correctness — flagged for Som rather than run
+  unprompted.
+
+**Carried into `CLAUDE.md`:** the graphify section now records that rebuilds are
+automatic, that `.git/hooks/` is machine-local so **a fresh clone needs
+`graphify hook install` again**, and that labelling is a separate paid step.
+
+**Still open (unchanged):** embedding provider / ADR-024, and the LangChain
+deviation in #63 flagged for Som in PR #82.
+
+**Next up:** #65 — query planner + LangGraph orchestration.
+
+---
+
+## 2026-08-20 — Sprint 3: LLM extraction (#63) and retrieval tools (#64)
 
 **Agent:** Claude Code (Opus 5)
 **Branches:** `feat/knowledge-extraction-63` → PR #82; `feat/retrieval-tools-64`

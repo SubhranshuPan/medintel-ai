@@ -188,6 +188,24 @@
 
 ## Known Gotchas
 
+- **A PR merged into `develop` does NOT auto-close its issue (confirmed
+  2026-08-21).** "Closes #N" in a PR body only fires when the PR targets the
+  *default* branch, which here is `main`. Since all work merges to `develop`,
+  every child issue has to be closed by hand with `gh issue close`. This is the
+  concrete reason the epic-sync convention in `CLAUDE.md` is mandatory rather
+  than nice-to-have — without it, closed work stays open on the board.
+- **`graphify-out/` went stale because nothing rebuilt it (fixed 2026-08-21).**
+  The graph is gitignored and machine-local, and `CLAUDE.md` asked for a manual
+  `graphify update .` that nobody ran — it sat 8 commits behind. Fixed by
+  `graphify hook install` (detached post-commit/post-checkout rebuilds, AST-only,
+  no API cost). **Hooks live in `.git/hooks/`, which is untracked, so a fresh
+  clone needs `graphify hook install` again** — check `graphify hook status`
+  first whenever the graph looks out of date. Note `graphify hook install` also
+  writes a `merge=graphify` line into the tracked `.gitattributes`; that is
+  reverted here on purpose, since a merge driver for a gitignored file is dead
+  config. Community *labelling* (`graphify label`) is a separate LLM-backed step
+  that costs money and is deliberately not automated.
+
 - **Line endings (2026-07-06):** Windows checkouts produced recurring CRLF noise in
   diffs. Fixed via `.gitattributes` (`* text=auto eol=lf`); on sandboxed/mounted
   clones also set `core.filemode false`. Don't trust mode-only or line-ending-only
